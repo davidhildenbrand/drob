@@ -1,0 +1,5 @@
+Name: libdrob
+Description: Library for Dynamic Rewriting and Optimization of Binary code
+Version: 0.0.1
+Libs: -L${libdir} -ldrob
+Cflags: -I${includedir}

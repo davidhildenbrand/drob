@@ -1,0 +1,19 @@
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.o
+
+# Compiled Dynamic libraries
+*.so
+
+# Compiled Static libraries
+*.a
+
+# Binaries
+tests/simple
+src/x86/gen/gen-defs
+
+# Generated files
+src/x86/gen/gen-defs.h
+libdrob.pc
