@@ -501,7 +501,7 @@ Instruction::genDynInfo(ProgramState &ps, const RewriterCfg &cfg,
         dynInfo->operands.push_back(dynOpInfo);
     }
 
-    return std::move(dynInfo);
+    return dynInfo;
 }
 
 static void performDirectMove(DynamicOperandInfo &in, DynamicOperandInfo &out,
