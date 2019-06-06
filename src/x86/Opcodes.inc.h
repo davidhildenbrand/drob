@@ -141,7 +141,7 @@ DEF_OPC(MOVSDmr, m64W_x64R, none, none, Other, nullptr, movsd, mov, movsd, OfEmu
 
 /* MOVUPD */
 DEF_OPC(MOVUPDmr, m128W_x128R, none, none, Other, nullptr, movupd, mov, nullptr, OfEmuFull)
-DEF_OPC(MOVUPDrr, x128W_m128R, none, none, Other, nullptr, movupd, mov, movupd, OfEmuFull)
+DEF_OPC(MOVUPDrr, x128W_x128R, none, none, Other, nullptr, movupd, mov, movupd, OfEmuFull)
 DEF_OPC(MOVUPDrm, x128W_m128R, none, none, Other, nullptr, movupd, mov, movupd, OfEmuFull)
 
 /* MOVUPS */
