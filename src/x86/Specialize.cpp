@@ -681,21 +681,19 @@ DEF_SPECIALIZE_FN(shl64)
         }
     }
 
-    if (opcode != Opcode::SHL64m || opcode != Opcode::SHL64r) {
-        return SpecRet::NoChange;
-    }
+    if (opcode == Opcode::SHL64m || opcode == Opcode::SHL64r) {
+        /* RHS (CL register) can be encoded as immediate? */
+        if (getImm(dynInfo.operands[1].input, imm, cfg)) {
 
-    /* RHS (CL register) can be encoded as immediate? */
-    if (getImm(dynInfo.operands[1].input, imm, cfg)) {
-
-        if (opcode == Opcode::SHL64m) {
-            opcode = Opcode::SHL64mi;
-            explOperands.op[1].imm = imm;
-            return SpecRet::Change;
-        } else {
-            opcode = Opcode::SHL64ri;
-            explOperands.op[1].imm = imm;
-            return SpecRet::Change;
+            if (opcode == Opcode::SHL64m) {
+                opcode = Opcode::SHL64mi;
+                explOperands.op[1].imm = imm;
+                return SpecRet::Change;
+            } else {
+                opcode = Opcode::SHL64ri;
+                explOperands.op[1].imm = imm;
+                return SpecRet::Change;
+            }
         }
     }
     return SpecRet::NoChange;
@@ -733,21 +731,19 @@ DEF_SPECIALIZE_FN(shr64)
         }
     }
 
-    if (opcode != Opcode::SHR64m || opcode != Opcode::SHR64r) {
-        return SpecRet::NoChange;
-    }
+    if (opcode == Opcode::SHR64m || opcode == Opcode::SHR64r) {
+        /* RHS (CL register) can be encoded as immediate? */
+        if (getImm(dynInfo.operands[1].input, imm, cfg)) {
 
-    /* RHS (CL register) can be encoded as immediate? */
-    if (getImm(dynInfo.operands[1].input, imm, cfg)) {
-
-        if (opcode == Opcode::SHR64m) {
-            opcode = Opcode::SHR64mi;
-            explOperands.op[1].imm = imm;
-            return SpecRet::Change;
-        } else {
-            opcode = Opcode::SHR64ri;
-            explOperands.op[1].imm = imm;
-            return SpecRet::Change;
+            if (opcode == Opcode::SHR64m) {
+                opcode = Opcode::SHR64mi;
+                explOperands.op[1].imm = imm;
+                return SpecRet::Change;
+            } else {
+                opcode = Opcode::SHR64ri;
+                explOperands.op[1].imm = imm;
+                return SpecRet::Change;
+            }
         }
     }
     return SpecRet::NoChange;
