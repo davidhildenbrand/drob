@@ -452,7 +452,7 @@ DEF_SPECIALIZE_FN(movsd)
             explOperands.op[1].mem.addr.val = (uint64_t)binaryPool.allocConstant(imm);
             explOperands.op[1].mem.addr.usrPtrNr = -1;
             return SpecRet::Change;
-        } else {
+        } else if (opcode == Opcode::MOVSDmr) {
             /* We can directly move an immediate to memory */
             if (is_simm32(imm)) {
                 opcode = Opcode::MOV64mi;
