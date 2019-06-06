@@ -312,15 +312,12 @@ typedef struct StaticOperandInfo {
     };
 } StaticOperandInfo;
 
-/*
- * Very coarse types of opcodes/instructions.
- */
-typedef enum OpcodeType : uint8_t {
+typedef enum ControlFlowType : uint8_t {
     Other = 0,
     Ret,
     Call,
     Branch,
-} OpcodeType;
+} ControlFlowType;
 
 typedef enum class EmuRet {
     Ok = 0,
@@ -384,7 +381,7 @@ typedef struct OpcodeInfo {
     /* number of explicit/implicit operands */
     uint8_t numOperands : 4;
     uint8_t numImplOperands : 4;
-    /* the type of instruction */
+    /* the control flow type of an instruction */
     uint8_t type : 4;
     uint8_t unused : 4;
     /* information about explicit operands */

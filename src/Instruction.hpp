@@ -294,7 +294,7 @@ public:
     {
         if (!opcodeInfo)
             return false;
-        return opcodeInfo->type == OpcodeType::Ret;
+        return opcodeInfo->type == ControlFlowType::Ret;
     }
 
     /*
@@ -304,7 +304,7 @@ public:
     {
         if (!opcodeInfo)
             return false;
-        return opcodeInfo->type == OpcodeType::Call;
+        return opcodeInfo->type == ControlFlowType::Call;
     }
 
     /*
@@ -314,7 +314,7 @@ public:
     {
         if (!opcodeInfo)
             return false;
-        return opcodeInfo->type == OpcodeType::Branch;
+        return opcodeInfo->type == ControlFlowType::Branch;
     }
 
     /*

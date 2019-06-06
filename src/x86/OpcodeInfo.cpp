@@ -630,7 +630,7 @@ static const StaticOperandInfo ioi_sh[7] = {
 const OpcodeInfo opcode_##_NAME { \
     .numOperands = ARRAY_SIZE(eoi_##_EOI), \
     .numImplOperands = ARRAY_SIZE(ioi_##_IOI), \
-    .type = OpcodeType::_TYPE, \
+    .type = ControlFlowType::_TYPE, \
     .unused = 0, \
     .opInfo = eoi_##_EOI, \
     .iOpInfo = ioi_##_IOI, \

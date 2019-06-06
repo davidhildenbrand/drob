@@ -20,7 +20,7 @@
  * - Explicit operands
  * - Implicit operands
  * - Predicate
- * - Opcode Type
+ * - Control Flow Type
  * - Operand refinement callback
  * - Code generation callback
  * - Emulation callback
