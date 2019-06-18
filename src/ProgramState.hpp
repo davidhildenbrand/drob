@@ -64,15 +64,14 @@ typedef enum class DynamicValueType : uint8_t {
     ///////////////////////////////////////////////////////////////////////////
     /*
      * The following types will never leave the core. They are only used
-     * internally. Preserved is special, as it may enter but will always
-     * leave as Unknown. These values should only be moved around.
+     * internally.
      */
     ///////////////////////////////////////////////////////////////////////////
 
     /*
      * The element belongs to an successor element (e.g. ptr) and
      * should not be used/modified on its own. If to be modified or read:
-     * - Preserved/ReturnPtr/UsrPtr: Reading returns unknown, writing
+     * - ReturnPtr/UsrPtr: Reading returns unknown, writing
      *   sets other parts to unknown.
      * - StackPtr: Reading returns UnknownStackPtrPiece, writing
      *   sets other parts to UnknownStackPtrPiece
@@ -445,8 +444,6 @@ private:
               uint8_t bytes);
     void setPtr(State &estate, size_t byteOffset, uint8_t bytes,
             const Data &data);
-    void setPreserved(State &estate, size_t byteOffset,
-              uint8_t bytes, const Data &data);
     void setImm(State &estate, size_t byteOffset, uint8_t bytes,
             const Data &data);
     void setType(State &estate, size_t byteOffset, uint8_t bytes,
