@@ -161,7 +161,7 @@ typedef struct DynamicOperandInfo {
      * Use Unknown as default, as that is often the default e.g.
      * for flags in the emulator.
      */
-    Data output{DataType::Unknown};
+    Data output{DynamicValueType::Unknown};
 } DynamicOperandInfo;
 
 /*

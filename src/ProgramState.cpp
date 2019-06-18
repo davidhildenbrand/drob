@@ -27,9 +27,9 @@ Data multiplyData(const Data& data, uint8_t scale)
     if (data.isImm()) {
         return Data(scale * data.getImm64());
     } else if (data.isStackPtr()) {
-        return Data(DataType::Tainted);
+        return Data(DynamicValueType::Tainted);
     } else if (data.isPtr()) {
-        return Data(DataType::Unknown);
+        return Data(DynamicValueType::Unknown);
     }
     return Data(data.getType());
 }
@@ -46,9 +46,9 @@ Data addData(const Data &ptr1, const Data &ptr2)
         return Data(ptr2.getType(), ptr2.getNr(), ptr2.getPtrOffset() + ptr1.getImm64());
     } else if (ptr1.isTainted() || ptr2.isTainted() ||
                ptr1.isStackPtr() || ptr2.isStackPtr()) {
-        return Data(DataType::Tainted);
+        return Data(DynamicValueType::Tainted);
     }
-    return Data(DataType::Unknown);
+    return Data(DynamicValueType::Unknown);
 }
 
 State &ProgramState::getRegisterData(Register reg,
@@ -158,26 +158,26 @@ void ProgramState::markUnknown(State &estate, size_t byteOffset,
         auto& md = estate.getMetadata(byteOffset + i);
 
         switch (md.type) {
-        case DataType::Dead:
-        case DataType::Immediate:
-            md.type = DataType::Unknown;
+        case DynamicValueType::Dead:
+        case DynamicValueType::Immediate:
+            md.type = DynamicValueType::Unknown;
             break;
-        case DataType::Tail:
-        case DataType::StackPtrTail:
+        case DynamicValueType::Tail:
+        case DynamicValueType::StackPtrTail:
             drob_assert(i == 0);
             /* search the parent of the tail and clear it */
             for (int j = -1; ; j--) {
                 drob_assert((int)byteOffset + j >= 0);
                 auto& md = estate.getMetadata(byteOffset + j);
-                if (md.type != DataType::Tail &&
-                    md.type != DataType::StackPtrTail) {
+                if (md.type != DynamicValueType::Tail &&
+                    md.type != DynamicValueType::StackPtrTail) {
                     clearTail(estate, byteOffset + j);
                     break;
                 }
             }
             break;
-        case DataType::Tainted:
-        case DataType::Unknown:
+        case DynamicValueType::Tainted:
+        case DynamicValueType::Unknown:
             break;
         default:
             clearTail(estate, byteOffset);
@@ -194,18 +194,18 @@ void ProgramState::clearTail(State &estate, size_t byteOffset)
 {
     auto &md = estate.getMetadata(byteOffset);
 
-    if (md.type == DataType::StackPtr)
-        md.type = DataType::Tainted;
+    if (md.type == DynamicValueType::StackPtr)
+        md.type = DynamicValueType::Tainted;
     else
-        md.type = DataType::Unknown;
+        md.type = DynamicValueType::Unknown;
 
     for (int i = 1; byteOffset + i < estate.getSize(); i++) {
         auto &md = estate.getMetadata(byteOffset + i);
 
-        if (md.type == DataType::Tail)
-            md.type = DataType::Unknown;
-        else if (md.type == DataType::StackPtrTail)
-            md.type = DataType::Tainted;
+        if (md.type == DynamicValueType::Tail)
+            md.type = DynamicValueType::Unknown;
+        else if (md.type == DynamicValueType::StackPtrTail)
+            md.type = DynamicValueType::Tainted;
         else
             break;
     }
@@ -232,12 +232,12 @@ void ProgramState::setElements(State &estate, size_t byteOffset,
     markUnknown(estate, byteOffset, bytes);
 
     switch (data.getType()) {
-    case DataType::StackPtr:
-    case DataType::UsrPtr:
-    case DataType::ReturnPtr:
+    case DynamicValueType::StackPtr:
+    case DynamicValueType::UsrPtr:
+    case DynamicValueType::ReturnPtr:
         setPtr(estate, byteOffset, bytes, data);
         break;
-    case DataType::Immediate:
+    case DynamicValueType::Immediate:
         setImm(estate, byteOffset, bytes, data);
         break;
     default:
@@ -262,38 +262,38 @@ Data ProgramState::getElements(const State &estate,
         const auto& md = estate.getMetadata(byteOffset + i);
 
         switch (md.type) {
-        case DataType::StackPtr:
+        case DynamicValueType::StackPtr:
             hasStackPtr = 1;
             if (i != 0)
                 isMixed = true;
             i += 7;
             continue;
-        case DataType::UsrPtr:
-        case DataType::ReturnPtr:
+        case DynamicValueType::UsrPtr:
+        case DynamicValueType::ReturnPtr:
             hasPtr = 1;
             if (i != 0)
                 isMixed = true;
             i += 7;
             continue;
-        case DataType::Immediate:
+        case DynamicValueType::Immediate:
             hasImm = 1;
             continue;
-        case DataType::Dead:
+        case DynamicValueType::Dead:
             hasDead = 1;
             continue;
-        case DataType::Tail:
+        case DynamicValueType::Tail:
             /* skip over leading tails */
             if (i == 0)
                 isMixed = true;
             continue;
-        case DataType::StackPtrTail:
+        case DynamicValueType::StackPtrTail:
             /* we are reading in the middle of a stack pointer */
             hasTainted = 1;
             continue;
-        case DataType::Unknown:
+        case DynamicValueType::Unknown:
             hasUnknown = 1;
             continue;
-        case DataType::Tainted:
+        case DynamicValueType::Tainted:
             hasTainted = 1;
             continue;
         default:
@@ -308,7 +308,7 @@ Data ProgramState::getElements(const State &estate,
     /* if we don't return a complete stack pointer, flag it correctly */
     if (hasTainted || (hasStackPtr &&
         (isMixed || bytes != 8))) {
-        return Data(DataType::Tainted);
+        return Data(DynamicValueType::Tainted);
     }
 
     if (!isMixed) {
@@ -321,7 +321,7 @@ Data ProgramState::getElements(const State &estate,
         }
         if (hasPtr) {
             if (bytes != 8)
-                return Data(DataType::Unknown);
+                return Data(DynamicValueType::Unknown);
             /* if we have a complete pointer, return that one */
             return Data(md.type, md.nr, *((int64_t *)&data));
         }
@@ -347,9 +347,9 @@ Data ProgramState::getElements(const State &estate,
             }
         }
         if (hasDead)
-            return Data(DataType::Dead);
+            return Data(DynamicValueType::Dead);
     }
-    return Data(DataType::Unknown);
+    return Data(DynamicValueType::Unknown);
 }
 
 void ProgramState::moveElements(const State &estate1, size_t byteOffset1,
@@ -373,19 +373,19 @@ void ProgramState::moveElements(const State &estate1, size_t byteOffset1,
         bool isStackPtr = false;
 
         switch (md1.type) {
-        case DataType::StackPtr:
+        case DynamicValueType::StackPtr:
             isStackPtr = true;
             /* fall through */
-        case DataType::UsrPtr:
-        case DataType::ReturnPtr: {
+        case DynamicValueType::UsrPtr:
+        case DynamicValueType::ReturnPtr: {
             if (bytes - i < 8) {
                 /* not completely copied :( */
                 for (unsigned int j = i; j < bytes; j++) {
                     auto& md = estate2.getMetadata(byteOffset2 + j);
                     if (isStackPtr)
-                        md.type = DataType::Tainted;
+                        md.type = DynamicValueType::Tainted;
                     else
-                        md.type = DataType::Unknown;
+                        md.type = DynamicValueType::Unknown;
                 }
             } else {
                 /* completely copied :) */
@@ -403,20 +403,20 @@ void ProgramState::moveElements(const State &estate1, size_t byteOffset1,
             i += 7;
             break;
         }
-        case DataType::Immediate:
-        case DataType::Dead:
+        case DynamicValueType::Immediate:
+        case DynamicValueType::Dead:
             md2.type = md1.type;
             data2 = data1;
             break;
-        case DataType::Tail:
-        case DataType::Unknown:
+        case DynamicValueType::Tail:
+        case DynamicValueType::Unknown:
             /* Starting to read in the middle of something */
-            md2.type = DataType::Unknown;
+            md2.type = DynamicValueType::Unknown;
             break;
-        case DataType::StackPtrTail:
-        case DataType::Tainted:
+        case DynamicValueType::StackPtrTail:
+        case DynamicValueType::Tainted:
             /* Starting to read in the middle of a stackptr  */
-            md2.type = DataType::Tainted;
+            md2.type = DynamicValueType::Tainted;
             break;
         default:
             drob_assert_not_reached();
@@ -434,9 +434,9 @@ void ProgramState::setPtr(State &estate, size_t byteOffset,
     estate.getMetadata(byteOffset).nr = data.getNr();
     for (int i = 1; i < bytes; i++) {
         if (data.isStackPtr())
-            estate.getMetadata(byteOffset + i).type = DataType::StackPtrTail;
+            estate.getMetadata(byteOffset + i).type = DynamicValueType::StackPtrTail;
         else
-            estate.getMetadata(byteOffset + i).type = DataType::Tail;
+            estate.getMetadata(byteOffset + i).type = DynamicValueType::Tail;
     }
     *((int64_t *)&estate.getData(byteOffset)) = data.getPtrOffset();
 }
@@ -446,7 +446,7 @@ void ProgramState::setImm(State &estate, size_t byteOffset,
 {
     /* mark all elements as immediates */
     for (int i = 0; i < bytes; i++) {
-        estate.getMetadata(byteOffset + i).type = DataType::Immediate;
+        estate.getMetadata(byteOffset + i).type = DynamicValueType::Immediate;
     }
     switch (bytes) {
     case 1:
@@ -474,12 +474,12 @@ void ProgramState::setImm(State &estate, size_t byteOffset,
 }
 
 void ProgramState::setType(State &estate, size_t byteOffset,
-               uint8_t bytes, DataType type)
+               uint8_t bytes, DynamicValueType type)
 {
     switch (type) {
-    case DataType::Dead:
-    case DataType::Unknown:
-    case DataType::Tainted:
+    case DynamicValueType::Dead:
+    case DynamicValueType::Unknown:
+    case DynamicValueType::Tainted:
         break;
     default:
         /* Tail is never exposed */
@@ -556,7 +556,7 @@ Data ProgramState::getStack(int64_t baseOffset, MemAccessSize size) const
     drob_assert(size != MemAccessSize::Unknown);
 
     if (isStackDead()) {
-        return Data(DataType::Tainted);
+        return Data(DynamicValueType::Tainted);
     }
 
     /*
@@ -620,7 +620,7 @@ void ProgramState::moveStackRegister(int64_t baseOffset, MemAccessSize size,
     State &regState = getRegisterData(reg, access, byteOffset2, bytes2);
 
     if (isStackDead()) {
-        setRegister(reg, access, Data(DataType::Tainted));
+        setRegister(reg, access, Data(DynamicValueType::Tainted));
         return;
     }
 
@@ -668,13 +668,13 @@ void ProgramState::nastyInstruction(void)
      */
     stack.setDead();
     for (i = 0; i < ARRAY_SIZE(flag1); i++) {
-        setElements(flag1[i], 0, 1, DataType::Unknown, false);
+        setElements(flag1[i], 0, 1, DynamicValueType::Unknown, false);
     }
     for (i = 0; i < ARRAY_SIZE(gprs64); i++) {
-        setElements(gprs64[i], 0, 8, DataType::Tainted, false);
+        setElements(gprs64[i], 0, 8, DynamicValueType::Tainted, false);
     }
     for (i = 0; i < ARRAY_SIZE(sse128); i++) {
-        setElements(sse128[i], 0, 16, DataType::Tainted, false);
+        setElements(sse128[i], 0, 16, DynamicValueType::Tainted, false);
     }
 }
 
@@ -704,39 +704,39 @@ bool ProgramState::mergeElements(State &lhs, const State &rhs)
             } else if (isImm(lmd.type)) {
                 if (ldata != rdata) {
                     diff = true;
-                    lmd.type = DataType::Unknown;
+                    lmd.type = DynamicValueType::Unknown;
                 }
                 /* else immediate matches */
             }
-        } else if ((lmd.type == DataType::Dead &&
-                   rmd.type == DataType::Unknown) ||
-                   (lmd.type == DataType::Unknown &&
-                    rmd.type == DataType::Dead)) {
+        } else if ((lmd.type == DynamicValueType::Dead &&
+                   rmd.type == DynamicValueType::Unknown) ||
+                   (lmd.type == DynamicValueType::Unknown &&
+                    rmd.type == DynamicValueType::Dead)) {
             /*
              * Dead is basically considered unknown. So
              * let's consider them here as dead and don't
              * indicate a change.
              */
-            lmd.type = DataType::Dead;
+            lmd.type = DynamicValueType::Dead;
         } else {
             /*
              * Tie breaker: We must only indicate a diff if the lhs
              * actually changed. Otherwise we could loop forever e.g. trying to
              * combine immediates with unknown values.
              */
-            if (lmd.type == DataType::StackPtr ||
-                lmd.type == DataType::StackPtrTail ||
-                lmd.type == DataType::Tainted ||
-                rmd.type == DataType::StackPtr ||
-                rmd.type == DataType::StackPtrTail ||
-                rmd.type == DataType::Tainted) {
-                if (lmd.type != DataType::Tainted) {
+            if (lmd.type == DynamicValueType::StackPtr ||
+                lmd.type == DynamicValueType::StackPtrTail ||
+                lmd.type == DynamicValueType::Tainted ||
+                rmd.type == DynamicValueType::StackPtr ||
+                rmd.type == DynamicValueType::StackPtrTail ||
+                rmd.type == DynamicValueType::Tainted) {
+                if (lmd.type != DynamicValueType::Tainted) {
                     diff = true;
-                    lmd.type = DataType::Tainted;
+                    lmd.type = DynamicValueType::Tainted;
                 }
-            } else if (lmd.type != DataType::Unknown) {
+            } else if (lmd.type != DynamicValueType::Unknown) {
                 diff = true;
-                lmd.type = DataType::Unknown;
+                lmd.type = DynamicValueType::Unknown;
             }
         }
     }
@@ -792,38 +792,38 @@ void ProgramState::dumpElements(State &estate, int64_t offset)
         bool merge = false;
 
         switch (md.type) {
-        case DataType::Dead:
+        case DynamicValueType::Dead:
             drob_dump("    %8d: Dead", i - offset);
             merge = true;
             break;
-        case DataType::Unknown:
+        case DynamicValueType::Unknown:
             drob_dump("    %8d: Unknown", i - offset);
             merge = true;
             break;
-        case DataType::Tainted:
+        case DynamicValueType::Tainted:
             drob_dump("    %8d: Tainted", i - offset);
             merge = true;
             break;
-        case DataType::Immediate:
+        case DynamicValueType::Immediate:
             drob_dump("    %8d: %x", i - offset, data);
             break;
-        case DataType::StackPtr:
+        case DynamicValueType::StackPtr:
             drob_dump("    %8d: StackPtr(%d) + %" PRIi64, i - offset,
                   md.nr, *((int64_t *)&data));
             i += 7;
             break;
-        case DataType::ReturnPtr:
+        case DynamicValueType::ReturnPtr:
             drob_dump("    %8d: ReturnPtr(%d) + %" PRIi64, i - offset,
                   md.nr, *((int64_t *)&data));
             i += 7;
             break;
-        case DataType::UsrPtr:
+        case DynamicValueType::UsrPtr:
             drob_dump("    %8d: UsrPtr(%d) + %" PRIi64, i - offset,
                   md.nr, *((int64_t *)&data));
             i += 7;
             break;
-        case DataType::StackPtrTail:
-        case DataType::Tail:
+        case DynamicValueType::StackPtrTail:
+        case DynamicValueType::Tail:
             drob_dump("    %8d: ERROR TAIL", i - offset);
             merge = true;
             break;

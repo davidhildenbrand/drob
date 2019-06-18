@@ -124,7 +124,7 @@ static void translateRet(const drob_cfg &cfg, FunctionSpecification *entrySpec,
      * with the ret instruction.
      */
     entrySpec->stack.in.push_back(StackRange({0, 8}));
-    entryState->setStack(0, MemAccessSize::B8, Data(DataType::ReturnPtr, 0, 0));
+    entryState->setStack(0, MemAccessSize::B8, Data(DynamicValueType::ReturnPtr, 0, 0));
 
     AMD64Class ret = drobParamTypeToAMD64(cfg.ret_type);
     switch (ret) {
@@ -251,7 +251,7 @@ static void translateParam(const drob_param_cfg &param, RewriterCfg &cfg,
                             drobParamToImm32(param));
             else
                 entryState->setRegister(integer32_regs[*intIdx],
-                            DataType::Unknown);
+                            DynamicValueType::Unknown);
             (*intIdx)++;
         } else {
             entrySpec->stack.in.push_back(StackRange( { *stackOffset, 4 } ));
@@ -260,7 +260,7 @@ static void translateParam(const drob_param_cfg &param, RewriterCfg &cfg,
                              drobParamToImm32(param));
             else
                 entryState->setStack(*stackOffset, MemAccessSize::B4,
-                             DataType::Unknown);
+                             DynamicValueType::Unknown);
             *stackOffset += 8;
         }
         break;
@@ -272,7 +272,7 @@ static void translateParam(const drob_param_cfg &param, RewriterCfg &cfg,
                             param.value.uint64_val);
             else
                 entryState->setRegister(integer64_regs[*intIdx],
-                            DataType::Unknown);
+                            DynamicValueType::Unknown);
             (*intIdx)++;
         } else {
             entrySpec->stack.in.push_back(StackRange( { *stackOffset, 8 } ));
@@ -281,7 +281,7 @@ static void translateParam(const drob_param_cfg &param, RewriterCfg &cfg,
                              param.value.uint64_val);
             else
                 entryState->setStack(*stackOffset, MemAccessSize::B8,
-                             DataType::Unknown);
+                             DynamicValueType::Unknown);
             *stackOffset += 8;
         }
         break;
@@ -302,7 +302,7 @@ static void translateParam(const drob_param_cfg &param, RewriterCfg &cfg,
                             val.i[0]);
             else
                 entryState->setRegister(integer64_regs[*intIdx],
-                            DataType::Unknown);
+                            DynamicValueType::Unknown);
             (*intIdx)++;
             entrySpec->reg.in += getSubRegisterMask(integer64_regs[*intIdx]);
             if (param.state == DROB_PARAM_STATE_CONST)
@@ -310,7 +310,7 @@ static void translateParam(const drob_param_cfg &param, RewriterCfg &cfg,
                             val.i[1]);
             else
                 entryState->setRegister(integer64_regs[*intIdx],
-                            DataType::Unknown);
+                            DynamicValueType::Unknown);
             (*intIdx)++;
         } else {
             /*
@@ -327,7 +327,7 @@ static void translateParam(const drob_param_cfg &param, RewriterCfg &cfg,
                              param.value.uint128_val);
             else
                 entryState->setStack(*stackOffset, MemAccessSize::B16,
-                             DataType::Unknown);
+                             DynamicValueType::Unknown);
             *stackOffset += 16;
         }
         break;
@@ -343,7 +343,7 @@ static void translateParam(const drob_param_cfg &param, RewriterCfg &cfg,
             else
                 entryState->setRegister(sse_regs[*sseIdx],
                             RegisterAccessType::F0,
-                            DataType::Unknown);
+                            DynamicValueType::Unknown);
             (*sseIdx)++;
         } else {
             entrySpec->stack.in.push_back(StackRange( { *stackOffset, 4 } ));
@@ -352,7 +352,7 @@ static void translateParam(const drob_param_cfg &param, RewriterCfg &cfg,
                              param.value.uint32_val);
             else
                 entryState->setStack(*stackOffset, MemAccessSize::B4,
-                             DataType::Unknown);
+                             DynamicValueType::Unknown);
             *stackOffset += 8;
         }
         break;
@@ -368,7 +368,7 @@ static void translateParam(const drob_param_cfg &param, RewriterCfg &cfg,
             else
                 entryState->setRegister(sse_regs[*sseIdx],
                             RegisterAccessType::H0,
-                            DataType::Unknown);
+                            DynamicValueType::Unknown);
             (*sseIdx)++;
         } else {
             entrySpec->stack.in.push_back(StackRange( { *stackOffset, 8 } ));
@@ -377,7 +377,7 @@ static void translateParam(const drob_param_cfg &param, RewriterCfg &cfg,
                              param.value.uint64_val);
             else
                 entryState->setStack(*stackOffset, MemAccessSize::B8,
-                             DataType::Unknown);
+                             DynamicValueType::Unknown);
             *stackOffset += 8;
         }
         break;
@@ -389,7 +389,7 @@ static void translateParam(const drob_param_cfg &param, RewriterCfg &cfg,
                             param.value.uint128_val);
             else
                 entryState->setRegister(sse_regs[*sseIdx],
-                            DataType::Unknown);
+                            DynamicValueType::Unknown);
             (*sseIdx)++;
         } else {
             entrySpec->stack.in.push_back(StackRange( { *stackOffset, 16 } ));
@@ -398,7 +398,7 @@ static void translateParam(const drob_param_cfg &param, RewriterCfg &cfg,
                              param.value.uint128_val);
             else
                 entryState->setStack(*stackOffset, MemAccessSize::B16,
-                             DataType::Unknown);
+                             DynamicValueType::Unknown);
             *stackOffset += 16;
         }
         break;
@@ -420,12 +420,12 @@ static void translatePtr(const drob_param_cfg &param, RewriterCfg &cfg,
     if (*intIdx < sizeof(integer64_regs)) {
         entrySpec.reg.in += getSubRegisterMask(integer64_regs[*intIdx]);
         entryState.setRegister(integer64_regs[*intIdx],
-                       Data(DataType::UsrPtr, nr, 0));
+                       Data(DynamicValueType::UsrPtr, nr, 0));
         (*intIdx)++;
     } else {
         entrySpec.stack.in.push_back(StackRange( { *stackOffset, 8 } ));
         entryState.setStack(*stackOffset, MemAccessSize::B8,
-                    Data(DataType::UsrPtr, nr, 0));
+                    Data(DynamicValueType::UsrPtr, nr, 0));
         *stackOffset += 8;
     }
 
@@ -472,21 +472,21 @@ void arch_translate_cfg(const drob_cfg &drob_cfg, RewriterCfg &cfg)
     /* handle the stack pointer passed via RSP */
     entrySpec->reg.in += getSubRegisterMask(Register::RSP);
     entrySpec->reg.preserved += getSubRegisterMask(Register::RSP);
-    entryState->setRegister(Register::RSP, Data(DataType::StackPtr, 0, 0));
+    entryState->setRegister(Register::RSP, Data(DynamicValueType::StackPtr, 0, 0));
 
     /* mark callee-saved registers */
     entrySpec->reg.preserved += getSubRegisterMask(Register::RBX);
-    entryState->setRegister(Register::RBX, DataType::Unknown);
+    entryState->setRegister(Register::RBX, DynamicValueType::Unknown);
     entrySpec->reg.preserved += getSubRegisterMask(Register::RBP);
-    entryState->setRegister(Register::RBP, DataType::Unknown);
+    entryState->setRegister(Register::RBP, DynamicValueType::Unknown);
     entrySpec->reg.preserved += getSubRegisterMask(Register::R12);
-    entryState->setRegister(Register::R12, DataType::Unknown);
+    entryState->setRegister(Register::R12, DynamicValueType::Unknown);
     entrySpec->reg.preserved += getSubRegisterMask(Register::R13);
-    entryState->setRegister(Register::R13, DataType::Unknown);
+    entryState->setRegister(Register::R13, DynamicValueType::Unknown);
     entrySpec->reg.preserved += getSubRegisterMask(Register::R14);
-    entryState->setRegister(Register::R14, DataType::Unknown);
+    entryState->setRegister(Register::R14, DynamicValueType::Unknown);
     entrySpec->reg.preserved += getSubRegisterMask(Register::R15);
-    entryState->setRegister(Register::R15, DataType::Unknown);
+    entryState->setRegister(Register::R15, DynamicValueType::Unknown);
     /* fixme: direction flag, mxcsr */
 
     if (unlikely(loglevel >= DROB_LOGLEVEL_DEBUG)) {

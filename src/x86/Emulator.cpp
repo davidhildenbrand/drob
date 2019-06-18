@@ -135,9 +135,9 @@ DEF_EMULATE_FN(add64)
 
         inout.output = Data(in.input.getType(), in.input.getNr(), offs);
     } else if (inout.input.isStackPtr() || in.input.isStackPtr()) {
-        inout.output = Data(DataType::Tainted);
+        inout.output = Data(DynamicValueType::Tainted);
     } else {
-        inout.output = Data(DataType::Unknown);
+        inout.output = Data(DynamicValueType::Unknown);
     }
     return EmuRet::Ok;
 }
@@ -195,7 +195,7 @@ DEF_EMULATE_FN(call)
      * For now, always use number 1, that at least helps to differentiate from
      * level 0 (entry function).
      */
-    dynInfo.operands[2].output = Data(DataType::ReturnPtr, 1, 0);
+    dynInfo.operands[2].output = Data(DynamicValueType::ReturnPtr, 1, 0);
     return EmuRet::Ok;
 }
 
@@ -433,9 +433,9 @@ DEF_EMULATE_FN(shl64)
         inout.output = shl64(inout.input.getImm64(), shift.input.getImm64(), eflags);
         setEflags(dynInfo, 2, eflags);
     } else if (inout.input.isStackPtr()) {
-        inout.output = Data(DataType::Tainted);
+        inout.output = Data(DynamicValueType::Tainted);
     } else if (inout.input.isPtr()) {
-        inout.output = Data(DataType::Unknown);
+        inout.output = Data(DynamicValueType::Unknown);
     } else {
         inout.output = inout.input;
     }
@@ -445,14 +445,14 @@ DEF_EMULATE_FN(shl64)
      */
     if (!shift.input.isImm() || shift.input.getImm64() != 1) {
         /* OF is undefined when not a 1-bit shift */
-        setOF(dynInfo, 7, Data(DataType::Unknown));
+        setOF(dynInfo, 7, Data(DynamicValueType::Unknown));
     }
     if (!shift.input.isImm() || shift.input.getImm64() >= 64) {
         /* CF is undefined when count is greater or equal to size in bits */
-        setCF(dynInfo, 2, Data(DataType::Unknown));
+        setCF(dynInfo, 2, Data(DynamicValueType::Unknown));
     }
     /* AF is undefined  */
-    setAF(dynInfo, 4, Data(DataType::Unknown));
+    setAF(dynInfo, 4, Data(DynamicValueType::Unknown));
 
     return EmuRet::Ok;
 }
@@ -478,9 +478,9 @@ DEF_EMULATE_FN(shr64)
         inout.output = shr64(inout.input.getImm64(), shift.input.getImm64(), eflags);
         setEflags(dynInfo, 2, eflags);
     } else if (inout.input.isStackPtr()) {
-        inout.output = Data(DataType::Tainted);
+        inout.output = Data(DynamicValueType::Tainted);
     } else if (inout.input.isPtr()) {
-        inout.output = Data(DataType::Unknown);
+        inout.output = Data(DynamicValueType::Unknown);
     } else {
         inout.output = inout.input;
     }
@@ -490,14 +490,14 @@ DEF_EMULATE_FN(shr64)
      */
     if (!shift.input.isImm() || shift.input.getImm64() != 1) {
         /* OF is undefined when not a 1-bit shift */
-        setOF(dynInfo, 7, Data(DataType::Unknown));
+        setOF(dynInfo, 7, Data(DynamicValueType::Unknown));
     }
     if (!shift.input.isImm() || shift.input.getImm64() >= 64) {
         /* CF is undefined when count is greater or equal to size in bits */
-        setCF(dynInfo, 2, Data(DataType::Unknown));
+        setCF(dynInfo, 2, Data(DynamicValueType::Unknown));
     }
     /* AF is undefined  */
-    setAF(dynInfo, 4, Data(DataType::Unknown));
+    setAF(dynInfo, 4, Data(DynamicValueType::Unknown));
 
     return EmuRet::Ok;
 }
@@ -552,9 +552,9 @@ DEF_EMULATE_FN(sub64)
 
         inout.output = Data(in.input.getType(), in.input.getNr(), offs);
     } else if (inout.input.isStackPtr() || in.input.isStackPtr()) {
-        inout.output = Data(DataType::Tainted);
+        inout.output = Data(DynamicValueType::Tainted);
     } else {
-        inout.output = Data(DataType::Unknown);
+        inout.output = Data(DynamicValueType::Unknown);
     }
     return EmuRet::Ok;
 }
@@ -581,7 +581,7 @@ DEF_EMULATE_FN(test8)
     }
     /* the following flags don't depend on any input values */
     setCF(dynInfo, 2, Data((uint8_t)0));
-    setAF(dynInfo, 4, Data(DataType::Unknown));
+    setAF(dynInfo, 4, Data(DynamicValueType::Unknown));
     setOF(dynInfo, 7, Data((uint8_t)0));
     return EmuRet::Ok;
 }
@@ -608,7 +608,7 @@ DEF_EMULATE_FN(test16)
     }
     /* the following flags don't depend on any input values */
     setCF(dynInfo, 2, Data((uint8_t)0));
-    setAF(dynInfo, 4, Data(DataType::Unknown));
+    setAF(dynInfo, 4, Data(DynamicValueType::Unknown));
     setOF(dynInfo, 7, Data((uint8_t)0));
     return EmuRet::Ok;
 }
@@ -635,7 +635,7 @@ DEF_EMULATE_FN(test32)
     }
     /* the following flags don't depend on any input values */
     setCF(dynInfo, 2, Data((uint8_t)0));
-    setAF(dynInfo, 4, Data(DataType::Unknown));
+    setAF(dynInfo, 4, Data(DynamicValueType::Unknown));
     setOF(dynInfo, 7, Data((uint8_t)0));
     return EmuRet::Ok;
 }
@@ -662,7 +662,7 @@ DEF_EMULATE_FN(test64)
     }
     /* the following flags don't depend on any input values */
     setCF(dynInfo, 2, Data((uint8_t)0));
-    setAF(dynInfo, 4, Data(DataType::Unknown));
+    setAF(dynInfo, 4, Data(DynamicValueType::Unknown));
     setOF(dynInfo, 7, Data((uint8_t)0));
     /*
      * TODO: we could make use of UsrPtr information here, e.g. comparing a

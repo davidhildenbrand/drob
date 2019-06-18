@@ -21,16 +21,16 @@ namespace drob {
 void dump(const Data &data)
 {
     switch (data.getType()) {
-    case DataType::Dead:
+    case DynamicValueType::Dead:
         drob_dump("      Dead");
         break;
-    case DataType::Unknown:
+    case DynamicValueType::Unknown:
         drob_dump("      Unknown");
         break;
-    case DataType::Tainted:
+    case DynamicValueType::Tainted:
         drob_dump("      Tainted");
         break;
-    case DataType::Immediate:
+    case DynamicValueType::Immediate:
         if (data.isImm64()) {
             drob_dump("      Immediate64: 0x%" PRIx64, data.getImm64());
         } else {
@@ -38,21 +38,21 @@ void dump(const Data &data)
                       (uint64_t)(data.getImm128() >> 64), data.getImm128() >> 64);
         }
         break;
-    case DataType::StackPtr:
+    case DynamicValueType::StackPtr:
         if (data.getPtrOffset() >= 0) {
             drob_dump("      StackPtr(%d) + %" PRIi64, data.getNr(), data.getPtrOffset());
         } else {
             drob_dump("      StackPtr(%d) - %" PRIi64, data.getNr(), -data.getPtrOffset());
         }
         break;
-    case DataType::ReturnPtr:
+    case DynamicValueType::ReturnPtr:
         if (data.getPtrOffset() >= 0) {
             drob_dump("      ReturnPtr(%d) + %" PRIi64, data.getNr(), data.getPtrOffset());
         } else {
             drob_dump("      ReturnPtr(%d) - %" PRIi64, data.getNr(), -data.getPtrOffset());
         }
         break;
-    case DataType::UsrPtr:
+    case DynamicValueType::UsrPtr:
         if (data.getPtrOffset() >= 0) {
             drob_dump("      UsrPtr(%d) + %" PRIi64, data.getNr(), data.getPtrOffset());
         } else {

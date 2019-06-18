@@ -28,7 +28,7 @@ namespace drob {
  * The type we track. Used both, for elements inside the ProgramState but also
  * for input/output of the ProgramState.
  */
-typedef enum class DataType : uint8_t {
+typedef enum class DynamicValueType : uint8_t {
     /*
      * The element is dead (never written on any path). Has to be treated
      * similar to Unknown, but might indicate that something strange is
@@ -79,33 +79,33 @@ typedef enum class DataType : uint8_t {
      */
     Tail,
     StackPtrTail,
-} DataType;
+} DynamicValueType;
 
-static inline bool isDead(DataType type)
+static inline bool isDead(DynamicValueType type)
 {
-    return type == DataType::Dead;
+    return type == DynamicValueType::Dead;
 }
 
-static inline bool isImm(DataType type)
+static inline bool isImm(DynamicValueType type)
 {
-    return type == DataType::Immediate;
+    return type == DynamicValueType::Immediate;
 }
 
-static inline bool isStackPtr(DataType type)
+static inline bool isStackPtr(DynamicValueType type)
 {
-    return type == DataType::StackPtr;
+    return type == DynamicValueType::StackPtr;
 }
 
-static inline bool isTainted(DataType type)
+static inline bool isTainted(DynamicValueType type)
 {
-    return type == DataType::Tainted;
+    return type == DynamicValueType::Tainted;
 }
 
-static inline bool isPtr(DataType type)
+static inline bool isPtr(DynamicValueType type)
 {
-    return type == DataType::StackPtr ||
-           type == DataType::UsrPtr ||
-           type == DataType::ReturnPtr;
+    return type == DynamicValueType::StackPtr ||
+           type == DynamicValueType::UsrPtr ||
+           type == DynamicValueType::ReturnPtr;
 }
 
 /*
@@ -118,39 +118,39 @@ typedef uint8_t ElementData;
  * For each byte of our stack and registers, we need some metadata.
  */
 typedef struct ElementMetadata {
-    DataType type{DataType::Dead};
+    DynamicValueType type{DynamicValueType::Dead};
     /* TODO: we could use for both a combined uint8_t 4/4 */
     uint8_t nr{0};
 } ElementMetadata;
 
 typedef class Data {
 public:
-    Data(DataType type, unsigned int nr = 0, int64_t ptrOffset = 0) :
+    Data(DynamicValueType type, unsigned int nr = 0, int64_t ptrOffset = 0) :
         type(type), nr(nr), ptrOffset(ptrOffset)
     {
         drob_assert(ptrOffset == 0 || isPtr());
         drob_assert(!nr || isPtr());
         /* Tail should never leave/enter the core, Preserved may enter. */
-        drob_assert(type != DataType::Tail);
-        drob_assert(type != DataType::StackPtrTail);
+        drob_assert(type != DynamicValueType::Tail);
+        drob_assert(type != DynamicValueType::StackPtrTail);
     }
-    Data() : type(DataType::Unknown) {}
+    Data() : type(DynamicValueType::Unknown) {}
     Data(uint8_t val) :
-        type(DataType::Immediate), size(ImmediateSize::Imm64), imm64_val(val)
+        type(DynamicValueType::Immediate), size(ImmediateSize::Imm64), imm64_val(val)
     {}
     Data(uint16_t val) :
-        type(DataType::Immediate), size(ImmediateSize::Imm64), imm64_val(val)
+        type(DynamicValueType::Immediate), size(ImmediateSize::Imm64), imm64_val(val)
     {}
     Data(uint32_t val) :
-        type(DataType::Immediate), size(ImmediateSize::Imm64), imm64_val(val)
+        type(DynamicValueType::Immediate), size(ImmediateSize::Imm64), imm64_val(val)
     {}
     Data(uint64_t val) :
-        type(DataType::Immediate), size(ImmediateSize::Imm64), imm64_val(val)
+        type(DynamicValueType::Immediate), size(ImmediateSize::Imm64), imm64_val(val)
     {}
     Data(unsigned __int128 val) :
-        type(DataType::Immediate), size(ImmediateSize::Imm128), imm128_val(val)
+        type(DynamicValueType::Immediate), size(ImmediateSize::Imm128), imm128_val(val)
     {}
-    DataType getType(void) const
+    DynamicValueType getType(void) const
     {
         return type;
     }
@@ -169,14 +169,14 @@ public:
      */
     bool isTainted(void) const
     {
-        return type == DataType::Tainted;
+        return type == DynamicValueType::Tainted;
     }
     /*
      * An immediate value.
      */
     bool isImm(void) const
     {
-        return type == DataType::Immediate;
+        return type == DynamicValueType::Immediate;
     }
     /*
      * An unknown pointer (excluding stackpointers), unknown values or dead
@@ -185,36 +185,36 @@ public:
      */
     bool isUnknownOrDead(void) const
     {
-        return type == DataType::Unknown || type == DataType::Dead;
+        return type == DynamicValueType::Unknown || type == DynamicValueType::Dead;
     }
     /*
      * Any pointer.
      */
     bool isPtr(void) const
     {
-        return type == DataType::StackPtr || type == DataType::UsrPtr ||
-               type == DataType::ReturnPtr;
+        return type == DynamicValueType::StackPtr || type == DynamicValueType::UsrPtr ||
+               type == DynamicValueType::ReturnPtr;
     }
     /*
      * A stack pointer.
      */
     bool isStackPtr(void) const
     {
-        return type == DataType::StackPtr;
+        return type == DynamicValueType::StackPtr;
     }
     /*
      * A user pointer.
      */
     bool isUsrPtr(void) const
     {
-        return type == DataType::UsrPtr;
+        return type == DynamicValueType::UsrPtr;
     }
     /*
      * A return pointer.
      */
     bool isReturnPtr(void) const
     {
-        return type == DataType::ReturnPtr;
+        return type == DynamicValueType::ReturnPtr;
     }
     bool isImm64(void) const
     {
@@ -252,7 +252,7 @@ private:
         Imm128,
     } ImmediateSize;
 
-    DataType type{DataType::Unknown};
+    DynamicValueType type{DynamicValueType::Unknown};
     union {
         /* ElementType::Immediate */
         ImmediateSize size;
@@ -450,7 +450,7 @@ private:
     void setImm(State &estate, size_t byteOffset, uint8_t bytes,
             const Data &data);
     void setType(State &estate, size_t byteOffset, uint8_t bytes,
-             DataType type);
+             DynamicValueType type);
     bool mergeElements(State &lhs, const State &rhs);
     void dumpElements(State &estate, int64_t offset);
 

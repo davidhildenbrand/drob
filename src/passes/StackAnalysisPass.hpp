@@ -264,10 +264,10 @@ public:
                 const PredComparison &comp = predicate->comparisons[i];
 
                 if (!comp.lhs.isImm && regIsDead(livenessData, comp.lhs.reg)) {
-                    curState->setRegister(comp.lhs.reg, DataType::Dead);
+                    curState->setRegister(comp.lhs.reg, DynamicValueType::Dead);
                 }
                 if (!comp.rhs.isImm && regIsDead(livenessData, comp.rhs.reg)) {
-                    curState->setRegister(comp.rhs.reg, DataType::Dead);
+                    curState->setRegister(comp.rhs.reg, DynamicValueType::Dead);
                 }
                 if (comp.con == PredConjunction::None) {
                     break;
@@ -277,20 +277,20 @@ public:
         for (auto &op : info.operands) {
             if (op.type == OperandType::Register) {
                 if (isRead(op.r.mode) && regIsDead(livenessData, op.r.reg, op.r.r)) {
-                    curState->setRegister(op.r.reg, op.r.r, DataType::Dead);
+                    curState->setRegister(op.r.reg, op.r.r, DynamicValueType::Dead);
                 }
                 if (isWrite(op.r.mode) && regIsDead(livenessData, op.r.reg, op.r.w)) {
-                    curState->setRegister(op.r.reg, op.r.w, DataType::Dead);
+                    curState->setRegister(op.r.reg, op.r.w, DynamicValueType::Dead);
                 }
             } else if (op.type == OperandType::MemPtr &&
                        op.m.ptr.type == MemPtrType::SIB) {
                 if (op.m.ptr.sib.base != Register::None &&
                     regIsDead(livenessData, op.m.ptr.sib.base)) {
-                    curState->setRegister(op.m.ptr.sib.base, DataType::Dead);
+                    curState->setRegister(op.m.ptr.sib.base, DynamicValueType::Dead);
                 }
                 if (op.m.ptr.sib.index != Register::None &&
                     regIsDead(livenessData, op.m.ptr.sib.index)) {
-                    curState->setRegister(op.m.ptr.sib.index, DataType::Dead);
+                    curState->setRegister(op.m.ptr.sib.index, DynamicValueType::Dead);
                 }
             }
         }

@@ -235,14 +235,14 @@ static Data emulateReadAccess(const MemAccess &memAcc, const ProgramState &ps,
     uint8_t *ptr;
 
     if (memAcc.ptrVal.isTainted())
-        return Data(DataType::Tainted);
+        return Data(DynamicValueType::Tainted);
     /*
      * Reading from unknown locations always results in Unknown. This is fine,
      * as we stop stack analysis as soon as a tainted value or a stack pointer
      * is written to an untracked location.
      */
     if (memAcc.ptrVal.isUnknownOrDead())
-        return Data(DataType::Unknown);
+        return Data(DynamicValueType::Unknown);
     if (memAcc.ptrVal.isReturnPtr())
         drob_throw("Trying to read via the return pointer.");
     if (memAcc.ptrVal.isStackPtr())
@@ -251,7 +251,7 @@ static Data emulateReadAccess(const MemAccess &memAcc, const ProgramState &ps,
         const UsrPtrCfg& ptrCfg = cfg.getUsrPtrCfg(memAcc.ptrVal.getNr());
 
         if (!ptrCfg.isKnown)
-            return Data(DataType::Unknown);
+            return Data(DynamicValueType::Unknown);
         if (ptrCfg.isConst)
             isConst = true;
         ptr = (uint8_t *)ptrCfg.val + memAcc.ptrVal.getPtrOffset();
@@ -264,7 +264,7 @@ static Data emulateReadAccess(const MemAccess &memAcc, const ProgramState &ps,
      * if we are reading constant data.
      */
     if (!isConst && !memProtCache.isConstant((uint64_t)ptr, static_cast<uint8_t>(memAcc.size)))
-        return Data(DataType::Unknown);
+        return Data(DynamicValueType::Unknown);
 
     switch (memAcc.size) {
     case MemAccessSize::B1:
@@ -297,7 +297,7 @@ static MemAccess createMemAccess(const StaticMemAccess& rawMemAccess,
         if (rawMemAccess.ptr.addr.usrPtrNr < 0) {
             memAccess.ptrVal = Data(rawMemAccess.ptr.addr.val);
         } else {
-            memAccess.ptrVal = Data(DataType::UsrPtr,
+            memAccess.ptrVal = Data(DynamicValueType::UsrPtr,
                                     rawMemAccess.ptr.addr.usrPtrNr,
                                     rawMemAccess.ptr.addr.usrPtrOffset);
         }
@@ -306,7 +306,7 @@ static MemAccess createMemAccess(const StaticMemAccess& rawMemAccess,
         if (rawMemAccess.ptr.sib.disp.usrPtrNr < 0) {
             memAccess.ptr.sib.disp = Data((uint64_t)(int64_t)rawMemAccess.ptr.sib.disp.val);
         } else {
-            memAccess.ptr.sib.disp = Data(DataType::UsrPtr,
+            memAccess.ptr.sib.disp = Data(DynamicValueType::UsrPtr,
                                           rawMemAccess.ptr.sib.disp.usrPtrNr,
                                           rawMemAccess.ptr.sib.disp.usrPtrOffset);
         }
@@ -397,7 +397,7 @@ DynamicOperandInfo Instruction::createDynOpInfo(const OperandInfo &operand,
         if (operand.imm.usrPtrNr < 0) {
             dynOperand.input = Data(operand.imm.val);
         } else {
-            dynOperand.input = Data(DataType::UsrPtr, operand.imm.usrPtrNr,
+            dynOperand.input = Data(DynamicValueType::UsrPtr, operand.imm.usrPtrNr,
                                     operand.imm.usrPtrOffset);
         }
         dynOperand.isInput = true;
@@ -554,11 +554,11 @@ static void performDirectMove(DynamicOperandInfo &in, DynamicOperandInfo &out,
 
 static EmuRet emulateGeneric(DynamicInstructionInfo &dynInfo)
 {
-    Data data(DataType::Unknown);
+    Data data(DynamicValueType::Unknown);
 
     /* if one input is tainted or a stack pointer, everything is tainted */
     if (dynInfo.numInputTainted || dynInfo.numInputStackPtr) {
-        data = Data(DataType::Tainted);
+        data = Data(DynamicValueType::Tainted);
     }
 
     for (auto &op : dynInfo.operands) {
