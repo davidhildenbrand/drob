@@ -79,11 +79,6 @@ typedef enum class DataType : uint8_t {
      */
     Tail,
     StackPtrTail,
-    /*
-     * The element is the start of a 8 byte preserved area. (other
-     * lengths can be supported later on on demand.)
-     */
-    Preserved8,
 } DataType;
 
 static inline bool isDead(DataType type)
@@ -113,11 +108,6 @@ static inline bool isPtr(DataType type)
            type == DataType::ReturnPtr;
 }
 
-static inline bool isPreserved(DataType type)
-{
-    return type == DataType::Preserved8;
-}
-
 /*
  * We track elements on the stack and in registers on a byte basis. Everything
  * else is just madness.
@@ -139,7 +129,7 @@ public:
         type(type), nr(nr), ptrOffset(ptrOffset)
     {
         drob_assert(ptrOffset == 0 || isPtr());
-        drob_assert(!nr || isPtr() || isPreserved(type));
+        drob_assert(!nr || isPtr());
         /* Tail should never leave/enter the core, Preserved may enter. */
         drob_assert(type != DataType::Tail);
         drob_assert(type != DataType::StackPtrTail);

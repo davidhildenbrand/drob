@@ -240,9 +240,6 @@ void ProgramState::setElements(State &estate, size_t byteOffset,
     case DataType::Immediate:
         setImm(estate, byteOffset, bytes, data);
         break;
-    case DataType::Preserved8:
-        setPreserved(estate, byteOffset, bytes, data);
-        break;
     default:
         setType(estate, byteOffset, bytes, data.getType());
         break;
@@ -256,7 +253,6 @@ Data ProgramState::getElements(const State &estate,
     int hasDead = 0;
     int hasPtr = 0;
     int hasStackPtr = 0;
-    int hasPreserved = 0;
     int hasUnknown = 0;
     int hasTainted = 0;
     bool isMixed = false;
@@ -275,12 +271,6 @@ Data ProgramState::getElements(const State &estate,
         case DataType::UsrPtr:
         case DataType::ReturnPtr:
             hasPtr = 1;
-            if (i != 0)
-                isMixed = true;
-            i += 7;
-            continue;
-        case DataType::Preserved8:
-            hasPreserved = 1;
             if (i != 0)
                 isMixed = true;
             i += 7;
@@ -312,8 +302,7 @@ Data ProgramState::getElements(const State &estate,
     }
 
     /* make sure we catch all mixed cases */
-    if (hasImm + hasDead + hasPtr + hasStackPtr + hasPreserved + hasUnknown + 
-        hasTainted > 1)
+    if (hasImm + hasDead + hasPtr + hasStackPtr + hasUnknown + hasTainted > 1)
         isMixed = true;
 
     /* if we don't return a complete stack pointer, flag it correctly */
@@ -335,10 +324,6 @@ Data ProgramState::getElements(const State &estate,
                 return Data(DataType::Unknown);
             /* if we have a complete pointer, return that one */
             return Data(md.type, md.nr, *((int64_t *)&data));
-        }
-        if (hasPreserved) {
-            /* we'll never let preserved values leave the core */
-            return Data(DataType::Unknown);
         }
         if (hasImm) {
             switch (bytes) {
@@ -392,8 +377,7 @@ void ProgramState::moveElements(const State &estate1, size_t byteOffset1,
             isStackPtr = true;
             /* fall through */
         case DataType::UsrPtr:
-        case DataType::ReturnPtr:
-        case DataType::Preserved8: {
+        case DataType::ReturnPtr: {
             if (bytes - i < 8) {
                 /* not completely copied :( */
                 for (unsigned int j = i; j < bytes; j++) {
@@ -455,19 +439,6 @@ void ProgramState::setPtr(State &estate, size_t byteOffset,
             estate.getMetadata(byteOffset + i).type = DataType::Tail;
     }
     *((int64_t *)&estate.getData(byteOffset)) = data.getPtrOffset();
-}
-
-void ProgramState::setPreserved(State &estate, size_t byteOffset,
-                uint8_t bytes, const Data &data)
-{
-    /* Preserved values are for now only 8 bytes long */
-    drob_assert(bytes == 8);
-
-    estate.getMetadata(byteOffset).type = data.getType();
-    estate.getMetadata(byteOffset).nr = data.getNr();
-    for (int i = 1; i < bytes; i++) {
-        estate.getMetadata(byteOffset + i).type = DataType::Tail;
-    }
 }
 
 void ProgramState::setImm(State &estate, size_t byteOffset,
@@ -736,13 +707,6 @@ bool ProgramState::mergeElements(State &lhs, const State &rhs)
                     lmd.type = DataType::Unknown;
                 }
                 /* else immediate matches */
-            } else if (lmd.type == DataType::Preserved8) {
-                if (lmd.nr != rmd.nr) {
-                    diff = true;
-                    clearTail(lhs, i);
-                }
-                /* else preserved matches */
-                i += 7;
             }
         } else if ((lmd.type == DataType::Dead &&
                    rmd.type == DataType::Unknown) ||
@@ -856,10 +820,6 @@ void ProgramState::dumpElements(State &estate, int64_t offset)
         case DataType::UsrPtr:
             drob_dump("    %8d: UsrPtr(%d) + %" PRIi64, i - offset,
                   md.nr, *((int64_t *)&data));
-            i += 7;
-            break;
-        case DataType::Preserved8:
-            drob_dump("    %8d: Preserved8(%d)", i - offset, md.nr);
             i += 7;
             break;
         case DataType::StackPtrTail:

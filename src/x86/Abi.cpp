@@ -476,17 +476,17 @@ void arch_translate_cfg(const drob_cfg &drob_cfg, RewriterCfg &cfg)
 
     /* mark callee-saved registers */
     entrySpec->reg.preserved += getSubRegisterMask(Register::RBX);
-    entryState->setRegister(Register::RBX, Data(DataType::Preserved8, 0));
+    entryState->setRegister(Register::RBX, DataType::Unknown);
     entrySpec->reg.preserved += getSubRegisterMask(Register::RBP);
-    entryState->setRegister(Register::RBP, Data(DataType::Preserved8, 1));
+    entryState->setRegister(Register::RBP, DataType::Unknown);
     entrySpec->reg.preserved += getSubRegisterMask(Register::R12);
-    entryState->setRegister(Register::R12, Data(DataType::Preserved8, 2));
+    entryState->setRegister(Register::R12, DataType::Unknown);
     entrySpec->reg.preserved += getSubRegisterMask(Register::R13);
-    entryState->setRegister(Register::R13, Data(DataType::Preserved8, 3));
+    entryState->setRegister(Register::R13, DataType::Unknown);
     entrySpec->reg.preserved += getSubRegisterMask(Register::R14);
-    entryState->setRegister(Register::R14, Data(DataType::Preserved8, 4));
+    entryState->setRegister(Register::R14, DataType::Unknown);
     entrySpec->reg.preserved += getSubRegisterMask(Register::R15);
-    entryState->setRegister(Register::R15, Data(DataType::Preserved8, 5));
+    entryState->setRegister(Register::R15, DataType::Unknown);
     /* fixme: direction flag, mxcsr */
 
     if (unlikely(loglevel >= DROB_LOGLEVEL_DEBUG)) {
