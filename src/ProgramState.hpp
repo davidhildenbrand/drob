@@ -122,9 +122,9 @@ typedef struct ElementMetadata {
     uint8_t nr{0};
 } ElementMetadata;
 
-typedef class Data {
+typedef class DynamicValue {
 public:
-    Data(DynamicValueType type, unsigned int nr = 0, int64_t ptrOffset = 0) :
+    DynamicValue(DynamicValueType type, unsigned int nr = 0, int64_t ptrOffset = 0) :
         type(type), nr(nr), ptrOffset(ptrOffset)
     {
         drob_assert(ptrOffset == 0 || isPtr());
@@ -133,20 +133,20 @@ public:
         drob_assert(type != DynamicValueType::Tail);
         drob_assert(type != DynamicValueType::StackPtrTail);
     }
-    Data() : type(DynamicValueType::Unknown) {}
-    Data(uint8_t val) :
+    DynamicValue() : type(DynamicValueType::Unknown) {}
+    DynamicValue(uint8_t val) :
         type(DynamicValueType::Immediate), size(ImmediateSize::Imm64), imm64_val(val)
     {}
-    Data(uint16_t val) :
+    DynamicValue(uint16_t val) :
         type(DynamicValueType::Immediate), size(ImmediateSize::Imm64), imm64_val(val)
     {}
-    Data(uint32_t val) :
+    DynamicValue(uint32_t val) :
         type(DynamicValueType::Immediate), size(ImmediateSize::Imm64), imm64_val(val)
     {}
-    Data(uint64_t val) :
+    DynamicValue(uint64_t val) :
         type(DynamicValueType::Immediate), size(ImmediateSize::Imm64), imm64_val(val)
     {}
-    Data(unsigned __int128 val) :
+    DynamicValue(unsigned __int128 val) :
         type(DynamicValueType::Immediate), size(ImmediateSize::Imm128), imm128_val(val)
     {}
     DynamicValueType getType(void) const
@@ -397,16 +397,16 @@ private:
 typedef class ProgramState {
 public:
     void setRegister(Register reg, RegisterAccessType access,
-                     const Data &data, bool cond = false);
-    void setRegister(Register reg, const Data &data, bool cond = false)
+                     const DynamicValue &data, bool cond = false);
+    void setRegister(Register reg, const DynamicValue &data, bool cond = false)
     {
         setRegister(reg, RegisterAccessType::Full, data, cond);
     }
-    void setStack(int64_t baseOffset, MemAccessSize size, const Data &data,
+    void setStack(int64_t baseOffset, MemAccessSize size, const DynamicValue &data,
                   bool cond = false);
-    Data getStack(int64_t baseOffset, MemAccessSize size) const;
-    Data getRegister(Register reg, RegisterAccessType access) const;
-    Data getRegister(Register reg) const
+    DynamicValue getStack(int64_t baseOffset, MemAccessSize size) const;
+    DynamicValue getRegister(Register reg, RegisterAccessType access) const;
+    DynamicValue getRegister(Register reg) const
     {
         return getRegister(reg, RegisterAccessType::Full);
     }
@@ -431,23 +431,23 @@ public:
     void dump(void);
 private:
     State &getRegisterData(Register reg, RegisterAccessType access,
-                       size_t &byteOffs, uint8_t &bytes) const;
+                           size_t &byteOffs, uint8_t &bytes) const;
     void markUnknown(State &estate, size_t byteOffset,
-             uint8_t bytes);
+                     uint8_t bytes);
     void clearTail(State &estate, size_t byteOffset);
     void setElements(State &estate, size_t byteOffset, uint8_t bytes,
-             const Data &data, bool cond);
-    Data getElements(const State &estate, size_t byteOffset,
-                  uint8_t bytes) const;
+                     const DynamicValue &data, bool cond);
+    DynamicValue getElements(const State &estate, size_t byteOffset,
+                             uint8_t bytes) const;
     void moveElements(const State &estate1, size_t byteOffset1,
-              State &estate2, size_t byteOffset2,
-              uint8_t bytes);
+                      State &estate2, size_t byteOffset2,
+                      uint8_t bytes);
     void setPtr(State &estate, size_t byteOffset, uint8_t bytes,
-            const Data &data);
+                const DynamicValue &data);
     void setImm(State &estate, size_t byteOffset, uint8_t bytes,
-            const Data &data);
+                const DynamicValue &data);
     void setType(State &estate, size_t byteOffset, uint8_t bytes,
-             DynamicValueType type);
+                 DynamicValueType type);
     bool mergeElements(State &lhs, const State &rhs);
     void dumpElements(State &estate, int64_t offset);
 
@@ -484,8 +484,8 @@ private:
     mutable Sse128State sse128[ARCH_SSE128_COUNT];
 } ProgramState;
 
-Data multiplyData(const Data& data, uint8_t scale);
-Data addData(const Data &ptr1, const Data &ptr2);
+DynamicValue multiplyDynamicValue(const Data& data, uint8_t scale);
+DynamicValue addDynamicValues(const DynamicValue &ptr1, const DynamicValue &ptr2);
 
 }
 

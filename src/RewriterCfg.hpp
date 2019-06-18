@@ -139,7 +139,7 @@ private:
     const drob_cfg& drobCfg;
 } RewriterCfg;
 
-static inline bool ptrToInt(const Data &ptr, const RewriterCfg &cfg,
+static inline bool ptrToInt(const DynamicValue &ptr, const RewriterCfg &cfg,
                             uint64_t *ptrVal)
 {
     if (ptr.isImm()) {

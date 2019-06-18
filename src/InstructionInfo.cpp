@@ -18,7 +18,7 @@
 
 namespace drob {
 
-void dump(const Data &data)
+void dump(const DynamicValue &data)
 {
     switch (data.getType()) {
     case DynamicValueType::Dead:

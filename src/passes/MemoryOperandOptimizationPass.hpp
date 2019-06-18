@@ -130,7 +130,7 @@ public:
 
                 /* Try to merge base into disp - if we have a base register */
                 if (newOp.mem.sib.base != Register::None) {
-                    Data tmp = addData(operand.memAcc.ptr.sib.base,
+                    DynamicValue tmp = addDynamicValues(operand.memAcc.ptr.sib.base,
                                        operand.memAcc.ptr.sib.disp);
 
                     if (ptrToInt(tmp, cfg, &ptrVal) && isDisp32(ptrVal)) {
@@ -150,9 +150,9 @@ public:
 
                 /* Try to merge base into scale * index - if we have a index register */
                 if (newOp.mem.sib.index != Register::None) {
-                    Data tmp1 = multiplyData(operand.memAcc.ptr.sib.index,
+                    DynamicValue tmp1 = multiplyDynamicValue(operand.memAcc.ptr.sib.index,
                                              operand.memAcc.ptr.sib.scale);
-                    Data tmp2 = addData(tmp1, operand.memAcc.ptr.sib.disp);
+                    DynamicValue tmp2 = addDynamicValues(tmp1, operand.memAcc.ptr.sib.disp);
 
                     if (ptrToInt(tmp2, cfg, &ptrVal) && isDisp32(ptrVal)) {
                         drob_debug("Instruction %p (%p): dropping index register from memory operand",

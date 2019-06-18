@@ -45,7 +45,7 @@ static inline bool registersWillBeRead(const LivenessData &livenessData,
  * - ProgramState will not suddenly have a mixture of immediates and pointers
  *   at the place where the usr ptr was.
  */
-static bool getImm(const Data &data, Immediate64 &imm, const RewriterCfg &cfg)
+static bool getImm(const DynamicValue &data, Immediate64 &imm, const RewriterCfg &cfg)
 {
     if (likely(data.isImm())) {
         drob_assert(!data.isImm128());

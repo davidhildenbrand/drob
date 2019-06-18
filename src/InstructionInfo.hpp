@@ -30,11 +30,11 @@ typedef struct MemPtr {
         Immediate64 addr;
         struct {
             /* base index */
-            Data base;
+            DynamicValue base;
             /* index register */
-            Data index;
+            DynamicValue index;
             /* displacement */
-            Data disp;
+            DynamicValue disp;
             /* scale: 1, 2, 4, 8 */
             uint8_t scale;
         } sib;
@@ -46,7 +46,7 @@ typedef struct MemPtr {
  */
 typedef struct MemAccess {
     /* The computed pointer value for convenience */
-    Data ptrVal;
+    DynamicValue ptrVal;
     MemPtr ptr;
     AccessMode mode;
     MemAccessSize size;
@@ -156,12 +156,12 @@ typedef struct DynamicOperandInfo {
      * access mode of None after refining, can use the value as
      * immediate - e.g. xor %EAX,%EAX
      */
-    Data input{(uint64_t)0};
+    DynamicValue input{(uint64_t)0};
     /*
      * Use Unknown as default, as that is often the default e.g.
      * for flags in the emulator.
      */
-    Data output{DynamicValueType::Unknown};
+    DynamicValue output{DynamicValueType::Unknown};
 } DynamicOperandInfo;
 
 /*
@@ -199,7 +199,7 @@ typedef struct DynamicInstructionInfo {
 
 void dump(const DynamicInstructionInfo &info);
 void dump(const DynamicOperandInfo &info);
-void dump(const Data &data);
+void dump(const DynamicValue &data);
 
 } /* namespace drob */
 

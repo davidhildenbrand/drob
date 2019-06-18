@@ -691,7 +691,7 @@ DEF_REFINE_FN(sh)
         if (operandInfo.nr > 1 && ps) {
             drob_assert(operandInfo.type == OperandType::Register);
 
-            Data data = ps->getRegister(Register::CL);
+            DynamicValue data = ps->getRegister(Register::CL);
             if (data.isImm()) {
                 if (data.getImm64() == 0) {
                     /* if the shift is 0, eflags are not touched */

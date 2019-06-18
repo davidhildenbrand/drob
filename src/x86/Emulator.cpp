@@ -39,29 +39,29 @@ static void setEflags(DynamicInstructionInfo& dynInfo, int startIdx,
 {
     drob_assert(dynInfo.operands[startIdx].type == OperandType::Register);
     drob_assert(dynInfo.operands[startIdx].regAcc.reg == Register::CF);
-    dynInfo.operands[startIdx++].output = Data(eflags.cf);
-    dynInfo.operands[startIdx++].output = Data(eflags.pf);
-    dynInfo.operands[startIdx++].output = Data(eflags.af);
-    dynInfo.operands[startIdx++].output = Data(eflags.zf);
-    dynInfo.operands[startIdx++].output = Data(eflags.sf);
-    dynInfo.operands[startIdx++].output = Data(eflags.of);
+    dynInfo.operands[startIdx++].output = DynamicValue(eflags.cf);
+    dynInfo.operands[startIdx++].output = DynamicValue(eflags.pf);
+    dynInfo.operands[startIdx++].output = DynamicValue(eflags.af);
+    dynInfo.operands[startIdx++].output = DynamicValue(eflags.zf);
+    dynInfo.operands[startIdx++].output = DynamicValue(eflags.sf);
+    dynInfo.operands[startIdx++].output = DynamicValue(eflags.of);
 }
 
-static void setAF(DynamicInstructionInfo& dynInfo, int idx, const Data &data)
+static void setAF(DynamicInstructionInfo& dynInfo, int idx, const DynamicValue &data)
 {
     drob_assert(dynInfo.operands[idx].type == OperandType::Register);
     drob_assert(dynInfo.operands[idx].regAcc.reg == Register::AF);
     dynInfo.operands[idx].output = data;
 }
 
-static void setCF(DynamicInstructionInfo& dynInfo, int idx, const Data &data)
+static void setCF(DynamicInstructionInfo& dynInfo, int idx, const DynamicValue &data)
 {
     drob_assert(dynInfo.operands[idx].type == OperandType::Register);
     drob_assert(dynInfo.operands[idx].regAcc.reg == Register::CF);
     dynInfo.operands[idx].output = data;
 }
 
-static void setOF(DynamicInstructionInfo& dynInfo, int idx, const Data &data)
+static void setOF(DynamicInstructionInfo& dynInfo, int idx, const DynamicValue &data)
 {
     drob_assert(dynInfo.operands[idx].type == OperandType::Register);
     drob_assert(dynInfo.operands[idx].regAcc.reg == Register::OF);
@@ -129,15 +129,15 @@ DEF_EMULATE_FN(add64)
     } else if (inout.input.isPtr() && in.input.isImm()) {
         int64_t offs = add64(inout.input.getPtrOffset(), in.input.getImm64(), eflags);
 
-        inout.output = Data(inout.input.getType(), inout.input.getNr(), offs);
+        inout.output = DynamicValue(inout.input.getType(), inout.input.getNr(), offs);
     } else if (in.input.isPtr() && inout.input.isImm()) {
         int64_t offs = add64(in.input.getPtrOffset(), inout.input.getImm64(), eflags);
 
-        inout.output = Data(in.input.getType(), in.input.getNr(), offs);
+        inout.output = DynamicValue(in.input.getType(), in.input.getNr(), offs);
     } else if (inout.input.isStackPtr() || in.input.isStackPtr()) {
-        inout.output = Data(DynamicValueType::Tainted);
+        inout.output = DynamicValue(DynamicValueType::Tainted);
     } else {
-        inout.output = Data(DynamicValueType::Unknown);
+        inout.output = DynamicValue(DynamicValueType::Unknown);
     }
     return EmuRet::Ok;
 }
@@ -185,7 +185,7 @@ DEF_EMULATE_FN(call)
     if (rsp.input.isImm()) {
         rsp.output = rsp.input.getImm64() - 8;
     } else if (rsp.input.isPtr()) {
-        rsp.output = Data(rsp.input.getType(), rsp.input.getNr(),
+        rsp.output = DynamicValue(rsp.input.getType(), rsp.input.getNr(),
                           rsp.input.getPtrOffset() - 8);
     } else {
         rsp.output = rsp.input;
@@ -195,7 +195,7 @@ DEF_EMULATE_FN(call)
      * For now, always use number 1, that at least helps to differentiate from
      * level 0 (entry function).
      */
-    dynInfo.operands[2].output = Data(DynamicValueType::ReturnPtr, 1, 0);
+    dynInfo.operands[2].output = DynamicValue(DynamicValueType::ReturnPtr, 1, 0);
     return EmuRet::Ok;
 }
 
@@ -351,7 +351,7 @@ DEF_EMULATE_FN(pop)
     if (rsp.input.isImm()) {
         rsp.output = rsp.input.getImm64() + size;
     } else if (rsp.input.isPtr()) {
-        rsp.output = Data(rsp.input.getType(), rsp.input.getNr(),
+        rsp.output = DynamicValue(rsp.input.getType(), rsp.input.getNr(),
                           rsp.input.getPtrOffset() + size);
     } else {
         rsp.output = rsp.input;
@@ -369,7 +369,7 @@ DEF_EMULATE_FN(push)
     if (rsp.input.isImm()) {
         rsp.output = rsp.input.getImm64() - size;
     } else if (rsp.input.isPtr()) {
-        rsp.output = Data(rsp.input.getType(), rsp.input.getNr(),
+        rsp.output = DynamicValue(rsp.input.getType(), rsp.input.getNr(),
                           rsp.input.getPtrOffset() - size);
     } else {
         rsp.output = rsp.input;
@@ -404,7 +404,7 @@ DEF_EMULATE_FN(ret)
     if (rsp.input.isImm()) {
         rsp.output = rsp.input.getImm64() + 8;
     } else if (rsp.input.isPtr()) {
-        rsp.output = Data(rsp.input.getType(), rsp.input.getNr(),
+        rsp.output = DynamicValue(rsp.input.getType(), rsp.input.getNr(),
                           rsp.input.getPtrOffset() + 8);
     } else {
         rsp.output = rsp.input;
@@ -433,9 +433,9 @@ DEF_EMULATE_FN(shl64)
         inout.output = shl64(inout.input.getImm64(), shift.input.getImm64(), eflags);
         setEflags(dynInfo, 2, eflags);
     } else if (inout.input.isStackPtr()) {
-        inout.output = Data(DynamicValueType::Tainted);
+        inout.output = DynamicValue(DynamicValueType::Tainted);
     } else if (inout.input.isPtr()) {
-        inout.output = Data(DynamicValueType::Unknown);
+        inout.output = DynamicValue(DynamicValueType::Unknown);
     } else {
         inout.output = inout.input;
     }
@@ -445,14 +445,14 @@ DEF_EMULATE_FN(shl64)
      */
     if (!shift.input.isImm() || shift.input.getImm64() != 1) {
         /* OF is undefined when not a 1-bit shift */
-        setOF(dynInfo, 7, Data(DynamicValueType::Unknown));
+        setOF(dynInfo, 7, DynamicValue(DynamicValueType::Unknown));
     }
     if (!shift.input.isImm() || shift.input.getImm64() >= 64) {
         /* CF is undefined when count is greater or equal to size in bits */
-        setCF(dynInfo, 2, Data(DynamicValueType::Unknown));
+        setCF(dynInfo, 2, DynamicValue(DynamicValueType::Unknown));
     }
     /* AF is undefined  */
-    setAF(dynInfo, 4, Data(DynamicValueType::Unknown));
+    setAF(dynInfo, 4, DynamicValue(DynamicValueType::Unknown));
 
     return EmuRet::Ok;
 }
@@ -478,9 +478,9 @@ DEF_EMULATE_FN(shr64)
         inout.output = shr64(inout.input.getImm64(), shift.input.getImm64(), eflags);
         setEflags(dynInfo, 2, eflags);
     } else if (inout.input.isStackPtr()) {
-        inout.output = Data(DynamicValueType::Tainted);
+        inout.output = DynamicValue(DynamicValueType::Tainted);
     } else if (inout.input.isPtr()) {
-        inout.output = Data(DynamicValueType::Unknown);
+        inout.output = DynamicValue(DynamicValueType::Unknown);
     } else {
         inout.output = inout.input;
     }
@@ -490,14 +490,14 @@ DEF_EMULATE_FN(shr64)
      */
     if (!shift.input.isImm() || shift.input.getImm64() != 1) {
         /* OF is undefined when not a 1-bit shift */
-        setOF(dynInfo, 7, Data(DynamicValueType::Unknown));
+        setOF(dynInfo, 7, DynamicValue(DynamicValueType::Unknown));
     }
     if (!shift.input.isImm() || shift.input.getImm64() >= 64) {
         /* CF is undefined when count is greater or equal to size in bits */
-        setCF(dynInfo, 2, Data(DynamicValueType::Unknown));
+        setCF(dynInfo, 2, DynamicValue(DynamicValueType::Unknown));
     }
     /* AF is undefined  */
-    setAF(dynInfo, 4, Data(DynamicValueType::Unknown));
+    setAF(dynInfo, 4, DynamicValue(DynamicValueType::Unknown));
 
     return EmuRet::Ok;
 }
@@ -546,15 +546,15 @@ DEF_EMULATE_FN(sub64)
     } else if (inout.input.isPtr() && in.input.isImm()) {
         int64_t offs = sub64(inout.input.getPtrOffset(), in.input.getImm64(), eflags);
 
-        inout.output = Data(inout.input.getType(), inout.input.getNr(), offs);
+        inout.output = DynamicValue(inout.input.getType(), inout.input.getNr(), offs);
     } else if (in.input.isPtr() && inout.input.isImm()) {
         int64_t offs = sub64(in.input.getPtrOffset(), inout.input.getImm64(), eflags);
 
-        inout.output = Data(in.input.getType(), in.input.getNr(), offs);
+        inout.output = DynamicValue(in.input.getType(), in.input.getNr(), offs);
     } else if (inout.input.isStackPtr() || in.input.isStackPtr()) {
-        inout.output = Data(DynamicValueType::Tainted);
+        inout.output = DynamicValue(DynamicValueType::Tainted);
     } else {
-        inout.output = Data(DynamicValueType::Unknown);
+        inout.output = DynamicValue(DynamicValueType::Unknown);
     }
     return EmuRet::Ok;
 }
@@ -580,9 +580,9 @@ DEF_EMULATE_FN(test8)
         setEflags(dynInfo, 2, eflags);
     }
     /* the following flags don't depend on any input values */
-    setCF(dynInfo, 2, Data((uint8_t)0));
-    setAF(dynInfo, 4, Data(DynamicValueType::Unknown));
-    setOF(dynInfo, 7, Data((uint8_t)0));
+    setCF(dynInfo, 2, DynamicValue((uint8_t)0));
+    setAF(dynInfo, 4, DynamicValue(DynamicValueType::Unknown));
+    setOF(dynInfo, 7, DynamicValue((uint8_t)0));
     return EmuRet::Ok;
 }
 
@@ -607,9 +607,9 @@ DEF_EMULATE_FN(test16)
         setEflags(dynInfo, 2, eflags);
     }
     /* the following flags don't depend on any input values */
-    setCF(dynInfo, 2, Data((uint8_t)0));
-    setAF(dynInfo, 4, Data(DynamicValueType::Unknown));
-    setOF(dynInfo, 7, Data((uint8_t)0));
+    setCF(dynInfo, 2, DynamicValue((uint8_t)0));
+    setAF(dynInfo, 4, DynamicValue(DynamicValueType::Unknown));
+    setOF(dynInfo, 7, DynamicValue((uint8_t)0));
     return EmuRet::Ok;
 }
 
@@ -634,9 +634,9 @@ DEF_EMULATE_FN(test32)
         setEflags(dynInfo, 2, eflags);
     }
     /* the following flags don't depend on any input values */
-    setCF(dynInfo, 2, Data((uint8_t)0));
-    setAF(dynInfo, 4, Data(DynamicValueType::Unknown));
-    setOF(dynInfo, 7, Data((uint8_t)0));
+    setCF(dynInfo, 2, DynamicValue((uint8_t)0));
+    setAF(dynInfo, 4, DynamicValue(DynamicValueType::Unknown));
+    setOF(dynInfo, 7, DynamicValue((uint8_t)0));
     return EmuRet::Ok;
 }
 
@@ -661,9 +661,9 @@ DEF_EMULATE_FN(test64)
         setEflags(dynInfo, 2, eflags);
     }
     /* the following flags don't depend on any input values */
-    setCF(dynInfo, 2, Data((uint8_t)0));
-    setAF(dynInfo, 4, Data(DynamicValueType::Unknown));
-    setOF(dynInfo, 7, Data((uint8_t)0));
+    setCF(dynInfo, 2, DynamicValue((uint8_t)0));
+    setAF(dynInfo, 4, DynamicValue(DynamicValueType::Unknown));
+    setOF(dynInfo, 7, DynamicValue((uint8_t)0));
     /*
      * TODO: we could make use of UsrPtr information here, e.g. comparing a
      * pointer against immediates/zero

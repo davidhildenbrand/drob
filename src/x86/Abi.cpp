@@ -124,7 +124,7 @@ static void translateRet(const drob_cfg &cfg, FunctionSpecification *entrySpec,
      * with the ret instruction.
      */
     entrySpec->stack.in.push_back(StackRange({0, 8}));
-    entryState->setStack(0, MemAccessSize::B8, Data(DynamicValueType::ReturnPtr, 0, 0));
+    entryState->setStack(0, MemAccessSize::B8, DynamicValue(DynamicValueType::ReturnPtr, 0, 0));
 
     AMD64Class ret = drobParamTypeToAMD64(cfg.ret_type);
     switch (ret) {
@@ -420,12 +420,12 @@ static void translatePtr(const drob_param_cfg &param, RewriterCfg &cfg,
     if (*intIdx < sizeof(integer64_regs)) {
         entrySpec.reg.in += getSubRegisterMask(integer64_regs[*intIdx]);
         entryState.setRegister(integer64_regs[*intIdx],
-                       Data(DynamicValueType::UsrPtr, nr, 0));
+                       DynamicValue(DynamicValueType::UsrPtr, nr, 0));
         (*intIdx)++;
     } else {
         entrySpec.stack.in.push_back(StackRange( { *stackOffset, 8 } ));
         entryState.setStack(*stackOffset, MemAccessSize::B8,
-                    Data(DynamicValueType::UsrPtr, nr, 0));
+                    DynamicValue(DynamicValueType::UsrPtr, nr, 0));
         *stackOffset += 8;
     }
 
@@ -472,7 +472,7 @@ void arch_translate_cfg(const drob_cfg &drob_cfg, RewriterCfg &cfg)
     /* handle the stack pointer passed via RSP */
     entrySpec->reg.in += getSubRegisterMask(Register::RSP);
     entrySpec->reg.preserved += getSubRegisterMask(Register::RSP);
-    entryState->setRegister(Register::RSP, Data(DynamicValueType::StackPtr, 0, 0));
+    entryState->setRegister(Register::RSP, DynamicValue(DynamicValueType::StackPtr, 0, 0));
 
     /* mark callee-saved registers */
     entrySpec->reg.preserved += getSubRegisterMask(Register::RBX);

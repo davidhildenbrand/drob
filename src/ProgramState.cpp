@@ -19,36 +19,36 @@
 namespace drob {
 
 
-Data multiplyData(const Data& data, uint8_t scale)
+DynamicValue multiplyDynamicValue(const Data& data, uint8_t scale)
 {
     if (scale == 1)
         return data;
 
     if (data.isImm()) {
-        return Data(scale * data.getImm64());
+        return DynamicValue(scale * data.getImm64());
     } else if (data.isStackPtr()) {
-        return Data(DynamicValueType::Tainted);
+        return DynamicValue(DynamicValueType::Tainted);
     } else if (data.isPtr()) {
-        return Data(DynamicValueType::Unknown);
+        return DynamicValue(DynamicValueType::Unknown);
     }
-    return Data(data.getType());
+    return DynamicValue(data.getType());
 }
 
-Data addData(const Data &ptr1, const Data &ptr2)
+DynamicValue addDynamicValues(const DynamicValue &ptr1, const DynamicValue &ptr2)
 {
-    Data ptr;
+    DynamicValue ptr;
 
     if (unlikely(ptr1.isImm() && ptr2.isImm())) {
-        return Data (ptr1.getImm64() + ptr2.getImm64());
+        return DynamicValue (ptr1.getImm64() + ptr2.getImm64());
     } else if (ptr1.isPtr() && ptr2.isImm()) {
-        return Data(ptr1.getType(), ptr1.getNr(), ptr1.getPtrOffset() + ptr2.getImm64());
+        return DynamicValue(ptr1.getType(), ptr1.getNr(), ptr1.getPtrOffset() + ptr2.getImm64());
     } else if (ptr2.isPtr() && ptr1.isImm()) {
-        return Data(ptr2.getType(), ptr2.getNr(), ptr2.getPtrOffset() + ptr1.getImm64());
+        return DynamicValue(ptr2.getType(), ptr2.getNr(), ptr2.getPtrOffset() + ptr1.getImm64());
     } else if (ptr1.isTainted() || ptr2.isTainted() ||
                ptr1.isStackPtr() || ptr2.isStackPtr()) {
-        return Data(DynamicValueType::Tainted);
+        return DynamicValue(DynamicValueType::Tainted);
     }
-    return Data(DynamicValueType::Unknown);
+    return DynamicValue(DynamicValueType::Unknown);
 }
 
 State &ProgramState::getRegisterData(Register reg,
@@ -121,7 +121,7 @@ State &ProgramState::getRegisterData(Register reg,
 }
 
 void ProgramState::setRegister(Register reg, RegisterAccessType access,
-                   const Data &data, bool cond)
+                   const DynamicValue &data, bool cond)
 {
     size_t byteOffset;
     uint8_t bytes;
@@ -138,7 +138,7 @@ void ProgramState::setRegister(Register reg, RegisterAccessType access,
     setElements(regState, byteOffset, bytes, data, cond);
 }
 
-Data ProgramState::getRegister(Register reg, RegisterAccessType access) const
+DynamicValue ProgramState::getRegister(Register reg, RegisterAccessType access) const
 {
     size_t byteOffset;
     uint8_t bytes;
@@ -212,7 +212,7 @@ void ProgramState::clearTail(State &estate, size_t byteOffset)
 }
 
 void ProgramState::setElements(State &estate, size_t byteOffset,
-                   uint8_t bytes, const Data &data, bool cond)
+                   uint8_t bytes, const DynamicValue &data, bool cond)
 {
     drob_assert(bytes > 0 && bytes + byteOffset <= estate.getSize());
 
@@ -246,7 +246,7 @@ void ProgramState::setElements(State &estate, size_t byteOffset,
     }
 }
 
-Data ProgramState::getElements(const State &estate,
+DynamicValue ProgramState::getElements(const State &estate,
                                size_t byteOffset, uint8_t bytes) const
 {
     int hasImm = 0;
@@ -308,7 +308,7 @@ Data ProgramState::getElements(const State &estate,
     /* if we don't return a complete stack pointer, flag it correctly */
     if (hasTainted || (hasStackPtr &&
         (isMixed || bytes != 8))) {
-        return Data(DynamicValueType::Tainted);
+        return DynamicValue(DynamicValueType::Tainted);
     }
 
     if (!isMixed) {
@@ -317,39 +317,39 @@ Data ProgramState::getElements(const State &estate,
 
         if (hasStackPtr) {
             drob_assert(bytes == 8);
-            return Data(md.type, md.nr, *((int64_t *)&data));
+            return DynamicValue(md.type, md.nr, *((int64_t *)&data));
         }
         if (hasPtr) {
             if (bytes != 8)
-                return Data(DynamicValueType::Unknown);
+                return DynamicValue(DynamicValueType::Unknown);
             /* if we have a complete pointer, return that one */
-            return Data(md.type, md.nr, *((int64_t *)&data));
+            return DynamicValue(md.type, md.nr, *((int64_t *)&data));
         }
         if (hasImm) {
             switch (bytes) {
             case 1:
-                return Data(*((uint8_t *)&data));
+                return DynamicValue(*((uint8_t *)&data));
             case 2:
-                return Data(*((uint16_t *)&data));
+                return DynamicValue(*((uint16_t *)&data));
             case 4:
-                return Data(*((uint32_t *)&data));
+                return DynamicValue(*((uint32_t *)&data));
             case 8:
-                return Data(*((uint64_t *)&data));
+                return DynamicValue(*((uint64_t *)&data));
             case 16: {
                 __uint128_t tmp;
 
                 /* take care of unaligned accesses */
                 memcpy(&tmp, &data, sizeof(tmp));
-                return Data(tmp);
+                return DynamicValue(tmp);
             }
             default:
                 drob_assert_not_reached();
             }
         }
         if (hasDead)
-            return Data(DynamicValueType::Dead);
+            return DynamicValue(DynamicValueType::Dead);
     }
-    return Data(DynamicValueType::Unknown);
+    return DynamicValue(DynamicValueType::Unknown);
 }
 
 void ProgramState::moveElements(const State &estate1, size_t byteOffset1,
@@ -425,7 +425,7 @@ void ProgramState::moveElements(const State &estate1, size_t byteOffset1,
 }
 
 void ProgramState::setPtr(State &estate, size_t byteOffset,
-              uint8_t bytes, const Data &data)
+                          uint8_t bytes, const DynamicValue &data)
 {
     /* Pointers are always 8 bytes long */
     drob_assert(bytes == 8);
@@ -442,7 +442,7 @@ void ProgramState::setPtr(State &estate, size_t byteOffset,
 }
 
 void ProgramState::setImm(State &estate, size_t byteOffset,
-              uint8_t bytes, const Data &data)
+                          uint8_t bytes, const DynamicValue &data)
 {
     /* mark all elements as immediates */
     for (int i = 0; i < bytes; i++) {
@@ -474,7 +474,7 @@ void ProgramState::setImm(State &estate, size_t byteOffset,
 }
 
 void ProgramState::setType(State &estate, size_t byteOffset,
-               uint8_t bytes, DynamicValueType type)
+                           uint8_t bytes, DynamicValueType type)
 {
     switch (type) {
     case DynamicValueType::Dead:
@@ -534,7 +534,7 @@ void StackState::grow(int64_t baseOffset, uint8_t size)
 }
 
 void ProgramState::setStack(int64_t baseOffset, MemAccessSize size,
-                const Data &data, bool cond)
+                            const DynamicValue &data, bool cond)
 {
     uint8_t bytes = static_cast<uint8_t>(size);
     drob_assert(size != MemAccessSize::Unknown);
@@ -550,13 +550,13 @@ void ProgramState::setStack(int64_t baseOffset, MemAccessSize size,
     setElements(stack, stack.getStackIdx(baseOffset), bytes, data, cond);
 }
 
-Data ProgramState::getStack(int64_t baseOffset, MemAccessSize size) const
+DynamicValue ProgramState::getStack(int64_t baseOffset, MemAccessSize size) const
 {
     uint8_t bytes = static_cast<uint8_t>(size);
     drob_assert(size != MemAccessSize::Unknown);
 
     if (isStackDead()) {
-        return Data(DynamicValueType::Tainted);
+        return DynamicValue(DynamicValueType::Tainted);
     }
 
     /*
@@ -620,7 +620,7 @@ void ProgramState::moveStackRegister(int64_t baseOffset, MemAccessSize size,
     State &regState = getRegisterData(reg, access, byteOffset2, bytes2);
 
     if (isStackDead()) {
-        setRegister(reg, access, Data(DynamicValueType::Tainted));
+        setRegister(reg, access, DynamicValue(DynamicValueType::Tainted));
         return;
     }
 

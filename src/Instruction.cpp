@@ -210,39 +210,40 @@ const InstructionInfo& Instruction::getInfo(void) const
     return *cachedInfo.get();
 }
 
-static Data calculateMemPtr(const MemPtr& ptr)
+static DynamicValue calculateMemPtr(const MemPtr& ptr)
 {
     drob_assert(ptr.type == MemPtrType::SIB);
 
     /* fast path */
     if (ptr.sib.base.isImm() && ptr.sib.index.isImm() && ptr.sib.disp.isImm()) {
-        return Data(ptr.sib.base.getImm64() + ptr.sib.scale * ptr.sib.index.getImm64() +
-                    ptr.sib.disp.getImm64());
+        return DynamicValue(ptr.sib.base.getImm64() +
+                            ptr.sib.scale * ptr.sib.index.getImm64() +
+                            ptr.sib.disp.getImm64());
     }
 
     /* base + scale * index + disp */
-    Data tmp1 = multiplyData(ptr.sib.index, ptr.sib.scale);
-    Data tmp2 = addData(ptr.sib.base, tmp1);
-    return addData(ptr.sib.disp, tmp2);
+    DynamicValue tmp1 = multiplyDynamicValue(ptr.sib.index, ptr.sib.scale);
+    DynamicValue tmp2 = addDynamicValues(ptr.sib.base, tmp1);
+    return addDynamicValues(ptr.sib.disp, tmp2);
 }
 
 /* Read data via a pointer */
-static Data emulateReadAccess(const MemAccess &memAcc, const ProgramState &ps,
-                              const RewriterCfg &cfg,
-                              const MemProtCache &memProtCache)
+static DynamicValue emulateReadAccess(const MemAccess &memAcc, const ProgramState &ps,
+                                      const RewriterCfg &cfg,
+                                      const MemProtCache &memProtCache)
 {
     bool isConst = false;
     uint8_t *ptr;
 
     if (memAcc.ptrVal.isTainted())
-        return Data(DynamicValueType::Tainted);
+        return DynamicValue(DynamicValueType::Tainted);
     /*
      * Reading from unknown locations always results in Unknown. This is fine,
      * as we stop stack analysis as soon as a tainted value or a stack pointer
      * is written to an untracked location.
      */
     if (memAcc.ptrVal.isUnknownOrDead())
-        return Data(DynamicValueType::Unknown);
+        return DynamicValue(DynamicValueType::Unknown);
     if (memAcc.ptrVal.isReturnPtr())
         drob_throw("Trying to read via the return pointer.");
     if (memAcc.ptrVal.isStackPtr())
@@ -251,7 +252,7 @@ static Data emulateReadAccess(const MemAccess &memAcc, const ProgramState &ps,
         const UsrPtrCfg& ptrCfg = cfg.getUsrPtrCfg(memAcc.ptrVal.getNr());
 
         if (!ptrCfg.isKnown)
-            return Data(DynamicValueType::Unknown);
+            return DynamicValue(DynamicValueType::Unknown);
         if (ptrCfg.isConst)
             isConst = true;
         ptr = (uint8_t *)ptrCfg.val + memAcc.ptrVal.getPtrOffset();
@@ -264,19 +265,19 @@ static Data emulateReadAccess(const MemAccess &memAcc, const ProgramState &ps,
      * if we are reading constant data.
      */
     if (!isConst && !memProtCache.isConstant((uint64_t)ptr, static_cast<uint8_t>(memAcc.size)))
-        return Data(DynamicValueType::Unknown);
+        return DynamicValue(DynamicValueType::Unknown);
 
     switch (memAcc.size) {
     case MemAccessSize::B1:
-        return Data(*ptr);
+        return DynamicValue(*ptr);
     case MemAccessSize::B2:
-        return Data (*((uint16_t*)ptr));
+        return DynamicValue (*((uint16_t*)ptr));
     case MemAccessSize::B4:
-        return Data (*((uint32_t*)ptr));
+        return DynamicValue (*((uint32_t*)ptr));
     case MemAccessSize::B8:
-        return Data (*((uint64_t*)ptr));
+        return DynamicValue (*((uint64_t*)ptr));
     case MemAccessSize::B16:
-        return Data (*((__uint128_t*)ptr));
+        return DynamicValue (*((__uint128_t*)ptr));
     default:
         drob_throw("Unsupported memory access size detected");
     }
@@ -295,31 +296,31 @@ static MemAccess createMemAccess(const StaticMemAccess& rawMemAccess,
     case MemPtrType::Direct:
         memAccess.ptr.addr = rawMemAccess.ptr.addr;
         if (rawMemAccess.ptr.addr.usrPtrNr < 0) {
-            memAccess.ptrVal = Data(rawMemAccess.ptr.addr.val);
+            memAccess.ptrVal = DynamicValue(rawMemAccess.ptr.addr.val);
         } else {
-            memAccess.ptrVal = Data(DynamicValueType::UsrPtr,
-                                    rawMemAccess.ptr.addr.usrPtrNr,
-                                    rawMemAccess.ptr.addr.usrPtrOffset);
+            memAccess.ptrVal = DynamicValue(DynamicValueType::UsrPtr,
+                                            rawMemAccess.ptr.addr.usrPtrNr,
+                                            rawMemAccess.ptr.addr.usrPtrOffset);
         }
         break;
     case MemPtrType::SIB:
         if (rawMemAccess.ptr.sib.disp.usrPtrNr < 0) {
-            memAccess.ptr.sib.disp = Data((uint64_t)(int64_t)rawMemAccess.ptr.sib.disp.val);
+            memAccess.ptr.sib.disp = DynamicValue((uint64_t)(int64_t)rawMemAccess.ptr.sib.disp.val);
         } else {
-            memAccess.ptr.sib.disp = Data(DynamicValueType::UsrPtr,
-                                          rawMemAccess.ptr.sib.disp.usrPtrNr,
-                                          rawMemAccess.ptr.sib.disp.usrPtrOffset);
+            memAccess.ptr.sib.disp = DynamicValue(DynamicValueType::UsrPtr,
+                                                  rawMemAccess.ptr.sib.disp.usrPtrNr,
+                                                  rawMemAccess.ptr.sib.disp.usrPtrOffset);
         }
         memAccess.ptr.sib.scale = rawMemAccess.ptr.sib.scale;
         if (rawMemAccess.ptr.sib.base != Register::None) {
             memAccess.ptr.sib.base = ps.getRegister(rawMemAccess.ptr.sib.base);
         } else {
-            memAccess.ptr.sib.base = Data((uint64_t)0);
+            memAccess.ptr.sib.base = DynamicValue((uint64_t)0);
         }
         if (rawMemAccess.ptr.sib.index != Register::None) {
             memAccess.ptr.sib.index = ps.getRegister(rawMemAccess.ptr.sib.index);
         } else {
-            memAccess.ptr.sib.index = Data((uint64_t)0);
+            memAccess.ptr.sib.index = DynamicValue((uint64_t)0);
         }
         memAccess.ptrVal = calculateMemPtr(memAccess.ptr);
         break;
@@ -395,10 +396,11 @@ DynamicOperandInfo Instruction::createDynOpInfo(const OperandInfo &operand,
     default:
         /* immediate - reconstruct the usr ptr properly */
         if (operand.imm.usrPtrNr < 0) {
-            dynOperand.input = Data(operand.imm.val);
+            dynOperand.input = DynamicValue(operand.imm.val);
         } else {
-            dynOperand.input = Data(DynamicValueType::UsrPtr, operand.imm.usrPtrNr,
-                                    operand.imm.usrPtrOffset);
+            dynOperand.input = DynamicValue(DynamicValueType::UsrPtr,
+                                            operand.imm.usrPtrNr,
+                                            operand.imm.usrPtrOffset);
         }
         dynOperand.isInput = true;
     }
@@ -554,11 +556,11 @@ static void performDirectMove(DynamicOperandInfo &in, DynamicOperandInfo &out,
 
 static EmuRet emulateGeneric(DynamicInstructionInfo &dynInfo)
 {
-    Data data(DynamicValueType::Unknown);
+    DynamicValue data(DynamicValueType::Unknown);
 
     /* if one input is tainted or a stack pointer, everything is tainted */
     if (dynInfo.numInputTainted || dynInfo.numInputStackPtr) {
-        data = Data(DynamicValueType::Tainted);
+        data = DynamicValue(DynamicValueType::Tainted);
     }
 
     for (auto &op : dynInfo.operands) {
@@ -707,7 +709,7 @@ TriState Instruction::willExecute(const ProgramState &ps) const
         if (comp.lhs.isImm) {
             lhs = comp.lhs.imm;
         } else {
-            Data data = ps.getRegister(comp.lhs.reg);
+            DynamicValue data = ps.getRegister(comp.lhs.reg);
 
             if (data.isImm())
                 lhs = data.getImm64();
@@ -719,7 +721,7 @@ TriState Instruction::willExecute(const ProgramState &ps) const
         if (comp.rhs.isImm) {
             rhs = comp.rhs.imm;
         } else {
-            Data data = ps.getRegister(comp.rhs.reg);
+            DynamicValue data = ps.getRegister(comp.rhs.reg);
 
             if (data.isImm())
                 rhs = data.getImm64();
