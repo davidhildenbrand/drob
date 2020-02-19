@@ -19,9 +19,11 @@
 #ifdef __cplusplus
 #include <cstdint>
 #include <cstdbool>
+#include <cstdio>
 #else
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 #endif
 
 #ifdef __cplusplus
